@@ -200,8 +200,9 @@ class SqliteKnowledgeStore:
         self, request: IngestRequest, content_sha256: str, source_key: str | None
     ) -> IngestionIdentity:
         if request.source_id is not None:
+            source_id_param = str(request.source_id)  # tolerate UUID objects
             source_row = self.conn.execute(
-                "SELECT * FROM sources WHERE source_id = ?", (request.source_id,)
+                "SELECT * FROM sources WHERE source_id = ?", (source_id_param,)
             ).fetchone()
             if source_row is None:
                 raise VerityError(
@@ -212,7 +213,7 @@ class SqliteKnowledgeStore:
             source_id = UUID(source_row["source_id"])
             document_row = self.conn.execute(
                 "SELECT document_id FROM documents WHERE source_id = ?",
-                (request.source_id,),
+                (source_id_param,),
             ).fetchone()
             if document_row is None:
                 raise VerityError(
@@ -718,3 +719,53 @@ class SqliteKnowledgeStore:
     def rebuild_fts(self) -> None:
         with self.conn:
             self.conn.execute("INSERT INTO fts_chunks(fts_chunks) VALUES('rebuild')")
+
+    # -- evidence support reads (store-private; evidence.py consumer) ---------
+
+    def get_requirement_local_id(
+        self, version_id: str, requirement_id: str
+    ) -> str | None:
+        """Resolve the authored local_id for a requirement on a given version.
+
+        Store-private read used by the evidence service so citation labels
+        resolve the local ID from the requirement record (contract 07:
+        never guessed from text). Version-bound, so historical evidence on a
+        superseded version still resolves its local ID (change log 1.0.3).
+        """
+        row = self.conn.execute(
+            "SELECT local_id FROM requirements"
+            " WHERE version_id = ? AND requirement_id = ?",
+            (version_id, requirement_id),
+        ).fetchone()
+        return row["local_id"] if row else None
+
+    def get_block_context(
+        self,
+        version_id: str,
+        before_ordinal: int,
+        after_ordinal: int,
+        context_chars: int,
+    ) -> tuple[str, str]:
+        """Adjacent canonical block text around a chunk, within a char cap.
+
+        Store-private read used by ``EvidenceService.get`` (contract 07:
+        context parts are strings, each at most ``context_chars``, drawn from
+        adjacent canonical blocks of the same version, never crossing
+        document boundaries). ``context_chars`` 0 returns empty parts.
+        """
+        if context_chars <= 0:
+            return "", ""
+        before_rows = self.conn.execute(
+            "SELECT text FROM blocks WHERE version_id = ? AND ordinal < ?"
+            " ORDER BY ordinal DESC",
+            (version_id, before_ordinal),
+        ).fetchall()
+        after_rows = self.conn.execute(
+            "SELECT text FROM blocks WHERE version_id = ? AND ordinal > ?"
+            " ORDER BY ordinal ASC",
+            (version_id, after_ordinal),
+        ).fetchall()
+        # Before: keep the text nearest the chunk (last context_chars).
+        before_full = "\n".join(r["text"] for r in reversed(before_rows))
+        after_full = "\n".join(r["text"] for r in after_rows)
+        return before_full[-context_chars:], after_full[:context_chars]
