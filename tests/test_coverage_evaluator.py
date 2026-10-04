@@ -15,7 +15,7 @@ from uuid import UUID
 
 import pytest
 
-from verity.coverage.evaluator import credible_implementation
+from verity.coverage.evaluator import credible_implementation, is_credible_excerpt
 from verity.coverage import DefaultRequirementEvaluator
 from verity.errors import VerityError
 from verity.ids import make_requirement_id
@@ -89,6 +89,7 @@ def read(relative: str) -> str:
 def test_comment_only_excerpt_is_not_credible() -> None:
     evidence = code_evidence("src/refund_window.py", 1, 3,
                              read("src/refund_window.py"))
+    assert not is_credible_excerpt(evidence.excerpt)
     assert not credible_implementation(evidence)
 
 

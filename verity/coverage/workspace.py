@@ -251,7 +251,7 @@ class RealWorkspaceScanner(WorkspaceScanner):
         root = configured.resolve()
         if not root.is_dir():
             raise VerityError(
-                "WORKSPACE_DENIED",
+                "WORKSPACE_NOT_FOUND",
                 "workspace root is missing or not a directory",
                 {"workspace_id": workspace.workspace_id},
             )

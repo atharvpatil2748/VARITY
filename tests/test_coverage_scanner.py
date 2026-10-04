@@ -72,7 +72,7 @@ def test_real_scanner_rejects_missing_root(tmp_path: Path) -> None:
     scanner = RealWorkspaceScanner(config_with(tmp_path / "nope"))
     with pytest.raises(VerityError) as exc_info:
         run(scanner.snapshot("demo"))
-    assert exc_info.value.code == "WORKSPACE_DENIED"
+    assert exc_info.value.code == "WORKSPACE_NOT_FOUND"
 
 
 def test_real_scanner_rejects_unknown_workspace(tmp_path: Path) -> None:

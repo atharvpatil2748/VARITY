@@ -32,7 +32,7 @@ from ..models import (
 _COMMENT_PREFIXES = ("#", "//", "--", ";", "/*", "*")
 
 
-def is_credential_excerpt(excerpt: str) -> bool:
+def is_credible_excerpt(excerpt: str) -> bool:
     """True when the excerpt contains at least one non-comment line."""
     for line in excerpt.splitlines():
         stripped = line.strip()
@@ -45,7 +45,7 @@ def is_credential_excerpt(excerpt: str) -> bool:
 
 def credible_implementation(evidence: CodeEvidence) -> bool:
     """Contract 12 false-positive rule: comment-only matches never count."""
-    return is_credential_excerpt(evidence.excerpt)
+    return is_credible_excerpt(evidence.excerpt)
 
 
 class RequirementEvaluator:
