@@ -1,0 +1,1688 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://verity.local/contracts/1.0.0",
+  "title": "VERITY canonical wire schemas 1.0.0",
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "chunk_id": {
+      "type": "string",
+      "pattern": "^chk_[0-9a-f]{64}$"
+    },
+    "requirement_id": {
+      "type": "string",
+      "pattern": "^req_[0-9a-f]{64}$"
+    },
+    "evidence_id": {
+      "type": "string",
+      "pattern": "^ev_[0-9a-f]{64}$"
+    },
+    "version": {
+      "const": "1.0.0"
+    },
+    "datetime": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "relative_path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/|[A-Za-z]:|.*(?:^|/)\\.\\.(?:/|$)).+$"
+    },
+    "DocumentKind": {
+      "enum": [
+        "spec",
+        "general"
+      ]
+    },
+    "ChunkKind": {
+      "enum": [
+        "requirement",
+        "acceptance_criterion",
+        "api_definition",
+        "general_chunk",
+        "code_chunk"
+      ]
+    },
+    "CoverageStatus": {
+      "enum": [
+        "IMPLEMENTED",
+        "PARTIAL",
+        "MISSING",
+        "UNCERTAIN"
+      ]
+    },
+    "Source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "source_id",
+        "source_key",
+        "source_path",
+        "registered_at"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/version"
+        },
+        "source_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "source_key": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+        },
+        "source_path": {
+          "$ref": "#/$defs/relative_path"
+        },
+        "registered_at": {
+          "$ref": "#/$defs/datetime"
+        }
+      }
+    },
+    "DocumentMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "metadata_version",
+        "title",
+        "project",
+        "spec_version",
+        "language",
+        "page_count",
+        "parser_name",
+        "parser_version",
+        "warnings",
+        "source_key"
+      ],
+      "properties": {
+        "metadata_version": {
+          "$ref": "#/$defs/version"
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "project": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "spec_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "language": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "page_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "parser_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parser_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "source_key": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+        }
+      }
+    },
+    "Document": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "document_id",
+        "source_id",
+        "version_id",
+        "name",
+        "media_type",
+        "kind",
+        "status",
+        "content_sha256",
+        "metadata",
+        "indexed_at"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/version"
+        },
+        "document_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "source_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "version_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "media_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "$ref": "#/$defs/DocumentKind"
+        },
+        "status": {
+          "enum": [
+            "pending",
+            "ready",
+            "partial",
+            "failed"
+          ]
+        },
+        "content_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "metadata": {
+          "$ref": "#/$defs/DocumentMetadata"
+        },
+        "indexed_at": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/datetime"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "Locator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "document_id",
+        "version_id",
+        "source_path",
+        "page",
+        "heading_path",
+        "start_line",
+        "end_line",
+        "start_offset",
+        "end_offset"
+      ],
+      "properties": {
+        "source_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "document_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "version_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "source_path": {
+          "$ref": "#/$defs/relative_path"
+        },
+        "page": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "heading_path": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "start_line": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "end_line": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "start_offset": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "end_offset": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "AcceptanceCriterion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "local_id",
+        "title",
+        "text",
+        "locator"
+      ],
+      "properties": {
+        "local_id": {
+          "type": "string",
+          "pattern": "^AC-[0-9]{3,}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "locator": {
+          "$ref": "#/$defs/Locator"
+        }
+      }
+    },
+    "Requirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "requirement_id",
+        "local_id",
+        "source_id",
+        "document_id",
+        "version_id",
+        "title",
+        "text",
+        "constraints",
+        "edge_cases",
+        "acceptance_criteria",
+        "api_refs",
+        "reference_ids",
+        "chunk_id",
+        "locator",
+        "evidence_id"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/version"
+        },
+        "requirement_id": {
+          "$ref": "#/$defs/requirement_id"
+        },
+        "local_id": {
+          "type": "string",
+          "pattern": "^REQ-[0-9]{3,}$"
+        },
+        "source_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "document_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "version_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "constraints": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "edge_cases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "acceptance_criteria": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AcceptanceCriterion"
+          }
+        },
+        "api_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^API-[0-9]{3,}$"
+          }
+        },
+        "reference_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(REQ|API|AC)-[0-9]{3,}$"
+          }
+        },
+        "chunk_id": {
+          "$ref": "#/$defs/chunk_id"
+        },
+        "locator": {
+          "$ref": "#/$defs/Locator"
+        },
+        "evidence_id": {
+          "$ref": "#/$defs/evidence_id"
+        }
+      }
+    },
+    "Chunk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "chunk_id",
+        "kind",
+        "text",
+        "locator",
+        "block_start",
+        "block_end",
+        "ordinal",
+        "requirement_id"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/version"
+        },
+        "chunk_id": {
+          "$ref": "#/$defs/chunk_id"
+        },
+        "kind": {
+          "$ref": "#/$defs/ChunkKind"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "locator": {
+          "$ref": "#/$defs/Locator"
+        },
+        "block_start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "block_end": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ordinal": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "requirement_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/requirement_id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "Provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "content_sha256",
+        "parser_name",
+        "parser_version",
+        "chunker_version",
+        "embedding_model",
+        "indexed_at"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/version"
+        },
+        "content_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "parser_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parser_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "chunker_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "embedding_model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "indexed_at": {
+          "$ref": "#/$defs/datetime"
+        }
+      }
+    },
+    "Citation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_id",
+        "label",
+        "locator"
+      ],
+      "properties": {
+        "evidence_id": {
+          "$ref": "#/$defs/evidence_id"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "locator": {
+          "$ref": "#/$defs/Locator"
+        }
+      }
+    },
+    "Evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "evidence_id",
+        "chunk_id",
+        "kind",
+        "quote",
+        "requirement_id",
+        "citation",
+        "provenance",
+        "score",
+        "ranking"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/version"
+        },
+        "evidence_id": {
+          "$ref": "#/$defs/evidence_id"
+        },
+        "chunk_id": {
+          "$ref": "#/$defs/chunk_id"
+        },
+        "kind": {
+          "$ref": "#/$defs/ChunkKind"
+        },
+        "quote": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requirement_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/requirement_id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "citation": {
+          "$ref": "#/$defs/Citation"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "score": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "ranking": {
+          "$ref": "#/$defs/Ranking"
+        }
+      }
+    },
+    "EvidenceLookup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "evidence",
+        "context_before",
+        "context_after"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/version"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        },
+        "context_before": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "context_after": {
+          "type": "string",
+          "maxLength": 4000
+        }
+      }
+    },
+    "SearchRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "query"
+      ],
+      "properties": {
+        "query": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 2000
+        },
+        "document_ids": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "minItems": 1,
+          "maxItems": 100,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/uuid"
+          },
+          "default": null
+        },
+        "document_kinds": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/DocumentKind"
+          },
+          "default": null
+        },
+        "chunk_kinds": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/ChunkKind"
+          },
+          "default": null
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "default": 8
+        },
+        "per_document_limit": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 20,
+          "default": null
+        }
+      }
+    },
+    "SearchResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "query",
+        "items",
+        "retrieval_mode",
+        "reranker_used",
+        "completeness",
+        "omissions",
+        "total_returned"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/version"
+        },
+        "query": {
+          "type": "string",
+          "minLength": 2
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          }
+        },
+        "retrieval_mode": {
+          "enum": [
+            "hybrid",
+            "lexical_only",
+            "semantic_only"
+          ]
+        },
+        "reranker_used": {
+          "type": "boolean"
+        },
+        "completeness": {
+          "enum": [
+            "complete",
+            "partial",
+            "empty"
+          ]
+        },
+        "omissions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "total_returned": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "CodeEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "start_line",
+        "end_line",
+        "excerpt",
+        "basis"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/relative_path"
+        },
+        "start_line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "excerpt": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "basis": {
+          "enum": [
+            "text_match",
+            "symbol_match",
+            "static_check",
+            "test_execution"
+          ]
+        }
+      }
+    },
+    "TestEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "start_line",
+        "end_line",
+        "excerpt",
+        "basis",
+        "outcome"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/relative_path"
+        },
+        "start_line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "excerpt": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "basis": {
+          "enum": [
+            "text_match",
+            "symbol_match",
+            "static_check",
+            "test_execution"
+          ]
+        },
+        "outcome": {
+          "enum": [
+            "not_run",
+            "passed",
+            "failed",
+            "error"
+          ]
+        }
+      }
+    },
+    "RequirementCoverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requirement_id",
+        "status",
+        "implementation",
+        "tests",
+        "reason",
+        "limitations"
+      ],
+      "properties": {
+        "requirement_id": {
+          "$ref": "#/$defs/requirement_id"
+        },
+        "status": {
+          "$ref": "#/$defs/CoverageStatus"
+        },
+        "implementation": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CodeEvidence"
+          }
+        },
+        "tests": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TestEvidence"
+          }
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "CoverageRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requirement_ids",
+        "workspace_id"
+      ],
+      "properties": {
+        "requirement_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/requirement_id"
+          }
+        },
+        "workspace_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+        },
+        "run_tests": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "CoverageResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "coverage_id",
+        "workspace_id",
+        "workspace_revision",
+        "inspected_at",
+        "results",
+        "limitations"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/version"
+        },
+        "coverage_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "workspace_id": {
+          "type": "string"
+        },
+        "workspace_revision": {
+          "$ref": "#/$defs/sha256"
+        },
+        "inspected_at": {
+          "$ref": "#/$defs/datetime"
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RequirementCoverage"
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "code",
+        "message",
+        "details",
+        "request_id",
+        "retryable"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/version"
+        },
+        "code": {
+          "enum": [
+            "INVALID_REQUEST",
+            "CONFIG_INVALID",
+            "VERSION_UNSUPPORTED",
+            "UNSUPPORTED_FORMAT",
+            "SPEC_VALIDATION_ERROR",
+            "PARSER_ERROR",
+            "CHUNKING_ERROR",
+            "LIMIT_EXCEEDED",
+            "SOURCE_NOT_FOUND",
+            "DOCUMENT_NOT_FOUND",
+            "REQUIREMENT_NOT_FOUND",
+            "EVIDENCE_NOT_FOUND",
+            "EVIDENCE_GONE",
+            "COVERAGE_NOT_FOUND",
+            "WORKSPACE_NOT_FOUND",
+            "WORKSPACE_DENIED",
+            "MODEL_UNAVAILABLE",
+            "RETRIEVAL_UNAVAILABLE",
+            "COVERAGE_UNAVAILABLE",
+            "SDK_UNAVAILABLE",
+            "SESSION_NOT_FOUND",
+            "TIMEOUT",
+            "INTERNAL_ERROR"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "details": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "request_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "retryable": {
+          "type": "boolean"
+        }
+      }
+    },
+    "IngestResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "document",
+        "created_new_version"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/version"
+        },
+        "document": {
+          "$ref": "#/$defs/Document"
+        },
+        "created_new_version": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Health": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "status",
+        "database",
+        "retrieval_mode",
+        "sdk_available"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/version"
+        },
+        "status": {
+          "enum": [
+            "ok",
+            "degraded"
+          ]
+        },
+        "database": {
+          "enum": [
+            "ready",
+            "unavailable"
+          ]
+        },
+        "retrieval_mode": {
+          "enum": [
+            "hybrid",
+            "lexical_only",
+            "semantic_only",
+            null
+          ]
+        },
+        "sdk_available": {
+          "type": "boolean"
+        }
+      }
+    },
+    "ChatMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "text",
+        "citations",
+        "created_at"
+      ],
+      "properties": {
+        "role": {
+          "enum": [
+            "user",
+            "assistant"
+          ]
+        },
+        "text": {
+          "type": "string"
+        },
+        "citations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidence_id"
+          }
+        },
+        "created_at": {
+          "$ref": "#/$defs/datetime"
+        }
+      }
+    },
+    "ChatSession": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "session_id",
+        "created_at"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/version"
+        },
+        "session_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "created_at": {
+          "$ref": "#/$defs/datetime"
+        }
+      }
+    },
+    "ChatResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "session_id",
+        "message",
+        "evidence"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/version"
+        },
+        "session_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "message": {
+          "$ref": "#/$defs/ChatMessage"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          }
+        }
+      }
+    },
+    "Ranking": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dense_rank",
+        "lexical_rank",
+        "rrf_score",
+        "rerank_score"
+      ],
+      "properties": {
+        "dense_rank": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "lexical_rank": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "rrf_score": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "rerank_score": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      }
+    },
+    "SpecEntity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "kind",
+        "local_id",
+        "title",
+        "text",
+        "reference_ids",
+        "chunk_id",
+        "evidence_id",
+        "locator"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/version"
+        },
+        "kind": {
+          "enum": [
+            "api_definition",
+            "acceptance_criterion"
+          ]
+        },
+        "local_id": {
+          "type": "string",
+          "pattern": "^(API|AC)-[0-9]{3,}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reference_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^REQ-[0-9]{3,}$"
+          }
+        },
+        "chunk_id": {
+          "$ref": "#/$defs/chunk_id"
+        },
+        "evidence_id": {
+          "$ref": "#/$defs/evidence_id"
+        },
+        "locator": {
+          "$ref": "#/$defs/Locator"
+        }
+      }
+    },
+    "ParsedBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ordinal",
+        "text",
+        "block_type",
+        "page",
+        "heading_path",
+        "start_line",
+        "end_line",
+        "start_offset",
+        "end_offset"
+      ],
+      "properties": {
+        "ordinal": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "block_type": {
+          "enum": [
+            "paragraph",
+            "heading",
+            "code"
+          ]
+        },
+        "page": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "heading_path": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "start_line": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "end_line": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "start_offset": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "end_offset": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "ParsedDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "metadata",
+        "blocks",
+        "media_type",
+        "kind",
+        "spec_requirements",
+        "spec_entities"
+      ],
+      "properties": {
+        "metadata": {
+          "$ref": "#/$defs/DocumentMetadata"
+        },
+        "blocks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ParsedBlock"
+          }
+        },
+        "media_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "$ref": "#/$defs/DocumentKind"
+        },
+        "spec_requirements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SpecRequirementDraft"
+          }
+        },
+        "spec_entities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SpecEntityDraft"
+          }
+        }
+      }
+    },
+    "ChunkDraft": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "text",
+        "block_start",
+        "block_end",
+        "start_offset",
+        "end_offset",
+        "requirement_id"
+      ],
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/ChunkKind"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "block_start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "block_end": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "start_offset": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "end_offset": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "requirement_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/requirement_id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "IngestRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_path"
+      ],
+      "properties": {
+        "source_path": {
+          "$ref": "#/$defs/relative_path"
+        },
+        "mode": {
+          "enum": [
+            "auto",
+            "spec",
+            "general"
+          ],
+          "default": "auto"
+        },
+        "source_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/uuid"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      }
+    },
+    "RetrievalResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "chunk",
+        "score",
+        "dense_rank",
+        "lexical_rank",
+        "rrf_score",
+        "rerank_score"
+      ],
+      "properties": {
+        "chunk": {
+          "$ref": "#/$defs/Chunk"
+        },
+        "score": {
+          "type": "number"
+        },
+        "dense_rank": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "lexical_rank": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "rrf_score": {
+          "type": "number"
+        },
+        "rerank_score": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      }
+    },
+    "ListPageDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "items",
+        "limit",
+        "offset",
+        "total"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/version"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Document"
+          }
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "ListPageSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "items",
+        "limit",
+        "offset",
+        "total"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/version"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Source"
+          }
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "HttpError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "error"
+      ],
+      "properties": {
+        "error": {
+          "$ref": "#/$defs/Error"
+        }
+      }
+    },
+    "ChatInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "text"
+      ],
+      "properties": {
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8000
+        }
+      }
+    },
+    "SpecRequirementDraft": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "local_id",
+        "title",
+        "text",
+        "constraints",
+        "edge_cases",
+        "api_refs",
+        "reference_ids",
+        "acceptance_local_ids",
+        "block_start",
+        "block_end"
+      ],
+      "properties": {
+        "local_id": {
+          "type": "string",
+          "pattern": "^REQ-[0-9]{3,}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "constraints": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "edge_cases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "api_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^API-[0-9]{3,}$"
+          }
+        },
+        "reference_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(REQ|API|AC)-[0-9]{3,}$"
+          }
+        },
+        "acceptance_local_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^AC-[0-9]{3,}$"
+          }
+        },
+        "block_start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "block_end": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "SpecEntityDraft": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "local_id",
+        "title",
+        "text",
+        "reference_ids",
+        "block_start",
+        "block_end"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "api_definition",
+            "acceptance_criterion"
+          ]
+        },
+        "local_id": {
+          "type": "string",
+          "pattern": "^(API|AC)-[0-9]{3,}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reference_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^REQ-[0-9]{3,}$"
+          }
+        },
+        "block_start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "block_end": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

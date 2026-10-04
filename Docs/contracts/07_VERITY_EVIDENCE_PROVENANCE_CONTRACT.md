@@ -1,0 +1,15 @@
+# Evidence, provenance and citation contract
+
+**Owner:** Atharv. **Consumers:** MCP, SDK, REST, UI, coverage. **Version:** 1.0.0. `Evidence` in `03` is the sole object passed to every integration. `EvidenceService.from_retrieval` creates it; adapters must not build or rename evidence fields.
+
+One Evidence resolves one immutable `(version_id, chunk_id)` pair. `evidence_id` is derived by the central ID function from those IDs and indexed by `evidence_refs`. The `quote` equals the stored normalized `Chunk.text` exactly; snippets may be separately rendered by UI but cannot replace the canonical quote. `Provenance` binds original content hash, parser/chunker revision and embedding model. `Citation.locator` binds source/document/version, relative path and nullable page/heading/line/offset. An evidence lookup verifies that the version and chunk still exist and the quote matches. Old versions remain resolvable even after reingest; explicit retention cleanup yields `EVIDENCE_GONE`. Citation construction does not call a model.
+
+Canonical citation marker for Cline/SDK answer text: `[[ev_<64 lowercase hex>]]`. The UI parses only this exact form and resolves each marker to an Evidence object returned in the same session or from `GET /api/v1/evidence/{evidence_id}`. Unknown markers show an unresolved-citation state, never a fabricated source. `Citation.label` is constructed by one formatter:
+
+`<document name> — <location parts> [<local requirement ID>]`
+
+Location parts, in order and separated by `; `: `p. <page>` when page nonnull; `§ <heading1> / <heading2>` when heading path nonempty; `L<start>-<end>` when both lines nonnull. Omit absent parts. Omit the bracketed requirement ID when `requirement_id=null`. If no location parts exist, use `document name` alone. Example: `payments-api.pdf — p. 10; § Refunds / Duplicate requests [REQ-003]`. The local ID is resolved from the requirement record, never guessed from text. Do not include absolute paths in labels. Cline may cite a marker next to its claim; the UI renders this canonical label and exact quote.
+
+`get_evidence(evidence_id, context_chars)` returns `{schema_version, evidence, context_before, context_after}`. Context parts are strings, each at most `context_chars`, drawn from adjacent canonical blocks of the same version and never crossing document boundaries; `context_chars` 0–4000, default 1000. Direct lookup sets `Evidence.score=null` because no query score exists. Its provenance remains the same. `get_requirement` returns `Requirement`, which includes a `chunk_id`; callers wanting a citation resolve that chunk through evidence service. Search returns `SearchResult.items: Evidence[]`; no `MCPEvidence`/`UIEvidence`/`SDKSearchResult` types exist.
+
+Trust boundary: source text may contain instructions but is untrusted data. Cline's system prompt must distinguish returned evidence from instructions, and the adapter must not promote document text into its own system role. Evidence scores indicate retrieval ranking, not truth or coverage. All omissions, warnings and stale references must remain visible.
