@@ -236,9 +236,10 @@ def build_service(config=None, *, store=None, ingestion=None, retrieval=None,
     if retrieval is None:
         retrieval = _LexicalOnlyRetrieval(store)
     if coverage is None:
-        from .coverage.candidates import FakeCodeEvidenceRetriever
+        from .coverage.candidates import RealCodeEvidenceRetriever
         from .coverage.evaluator import DefaultRequirementEvaluator
         from .coverage.service import DefaultCoverageService
+        from .coverage.testrunner import AllowlistedTestRunner
         from .coverage.workspace import RealWorkspaceScanner
 
         async def _lookup(requirement_id: str) -> Requirement:
@@ -251,11 +252,32 @@ def build_service(config=None, *, store=None, ingestion=None, retrieval=None,
                 )
             return requirement
 
+        scanner = RealWorkspaceScanner(config)
+
+        class _WorkspaceTestRunner:
+            """N5 allowlisted runner for whichever workspace the snapshot names.
+
+            The runner is per-workspace (contract 12: only the configured
+            allowlisted ``test_command`` ever runs); resolve it from the
+            snapshot's ``workspace_id`` so every configured workspace works.
+            """
+
+            def __init__(self, config) -> None:
+                self._config = config
+
+            async def run(self, snapshot):
+                workspace = self._config.workspace(snapshot.workspace_id)
+                return await AllowlistedTestRunner(workspace).run(snapshot)
+
+        # N3 real candidate search + N5 allowlisted tests; persistence stays in
+        # DefaultVerityService.check_coverage (one immutable row per run).
         coverage = DefaultCoverageService(
-            RealWorkspaceScanner(config),
-            FakeCodeEvidenceRetriever({}),  # real candidate search is N3
+            scanner,
+            RealCodeEvidenceRetriever(scanner),
             DefaultRequirementEvaluator(),
             _lookup,
+            None,
+            _WorkspaceTestRunner(config),
         )
     evidence = DefaultEvidenceService(store)
     return DefaultVerityService(config, store, ingestion, retrieval, evidence, coverage)

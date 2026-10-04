@@ -22,5 +22,5 @@ log_level = "INFO"
 
 [workspaces.demo]
 root = "./demo-workspace"
-test_command = ["python", "-m", "pytest", "-q"]
+test_command = ["C:\\Users\\athar\\AppData\\Local\\Programs\\Python\\Python312\\python.exe", "-m", "pytest", "-v", "--tb=short"]
 exclude = [".git", ".venv", "node_modules", "dist"]
