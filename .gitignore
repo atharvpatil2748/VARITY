@@ -6,6 +6,9 @@ venv/
 data/
 *.sqlite3
 *.db
+*.egg-info/
+demo-workspace/src/
+demo-workspace/tests/
 node_modules/
 /dist
 .DS_Store
