@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0.0",
+  "requirement_id": "req_1d89bd403b85bcab97977f891a494c9788e5b7571e43a938c3b2d08c454ffbd2",
+  "local_id": "REQ-001",
+  "source_id": "24da624f-7fd0-41ea-a49b-8449cbb179d9",
+  "document_id": "ebc2352e-ff9c-4167-b11a-1e30d550411d",
+  "version_id": "129dcd06-1ba1-4f0c-bf7e-c678f905b624",
+  "title": "Refund window",
+  "text": "Refund requests MUST be accepted only within 30 days.",
+  "constraints": ["The refund window is exactly 30 days from the original purchase date."],
+  "edge_cases": [],
+  "acceptance_criteria": [],
+  "api_refs": [],
+  "reference_ids": [],
+  "chunk_id": "chk_71bb4eb1f7917adbd4771acd9946ee1a30994af19c4ebbf66ecd2b1e4b89b16a",
+  "locator": {
+    "source_id": "24da624f-7fd0-41ea-a49b-8449cbb179d9",
+    "document_id": "ebc2352e-ff9c-4167-b11a-1e30d550411d",
+    "version_id": "129dcd06-1ba1-4f0c-bf7e-c678f905b624",
+    "source_path": "specs/payments.md",
+    "page": null,
+    "heading_path": ["Requirements", "REQ-001"],
+    "start_line": 12,
+    "end_line": 12,
+    "start_offset": null,
+    "end_offset": null
+  },
+  "evidence_id": "ev_0a9948f2aa8b8cc5e499ef43626c5847eeab8df548ba5961e38a9a1126e4dc8e"
+}
