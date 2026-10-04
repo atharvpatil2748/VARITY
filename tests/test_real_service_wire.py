@@ -56,31 +56,34 @@ def to_wire(result):
 def real_service():
     from verity.service import build_service
 
-    try:
-        return build_service()
-    except VerityError as err:
-        if err.code != "CONFIG_INVALID":
-            raise
-        # The repo's verity.toml declares a demo workspace root that is not
-        # checked in; contract 14 correctly refuses that. Fall back to a
-        # defaults-derived config with a temporary workspace/data tree so the
-        # real service itself is still validated end to end.
-        import tempfile
+    # Always run against an isolated temp config: hermetic tests must not
+    # write into the repo-local ./data database (which the V10 demo seeds).
+    import tempfile
 
-        from verity.config import VerityConfig, WorkspaceConfig
+    from verity.config import VerityConfig, WorkspaceConfig
 
-        tmp = Path(tempfile.mkdtemp(prefix="verity-v9-"))
-        data_dir = tmp / "data"
-        documents = tmp / "documents"
-        data_dir.mkdir()
-        documents.mkdir()
-        config = VerityConfig(
-            data_dir=data_dir,
-            source_root=documents,
-            database_path=data_dir / "verity.sqlite3",
-            workspaces={"demo": WorkspaceConfig(workspace_id="demo", root=tmp)},
-        )
-        return build_service(config=config)
+    tmp = Path(tempfile.mkdtemp(prefix="verity-v9-"))
+    data_dir = tmp / "data"
+    documents = tmp / "documents"
+    data_dir.mkdir()
+    documents.mkdir()
+    config = VerityConfig(
+        data_dir=data_dir,
+        source_root=documents,
+        database_path=data_dir / "verity.sqlite3",
+        workspaces={"demo": WorkspaceConfig(workspace_id="demo", root=tmp)},
+    )
+    return build_service(config=config)
+
+
+def test_build_service_zero_arg_constructs():
+    """The frozen zero-arg factory works from this checkout (the demo
+    workspace root is present per contract 14); construction only."""
+
+    from verity.service import build_service
+
+    service = build_service()
+    assert callable(getattr(service, "search_evidence", None))
 
 
 def test_build_service_exposes_contract16_surface(real_service):
