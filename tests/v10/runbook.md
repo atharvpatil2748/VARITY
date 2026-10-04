@@ -40,8 +40,9 @@ Ask the agent, in one conversation:
 2. "What exactly does REQ-001 require?" → `get_requirement`.
 3. "Show me the provenance of the evidence you cited." → `get_evidence`.
 4. "Check whether the demo workspace implements the refund window
-   requirement." → `check_coverage` (honest status; UNCERTAIN is correct
-   until PR-N2's real candidate search merges — never "fix" it).
+   requirement." → `check_coverage`. With PR-N2 merged the real candidate
+   search runs, so report the status the tool actually returns — record it
+   honestly, never "fix" it to a nicer value.
 5. Restart proof: close the Cline session (server process exits), reopen
    and ask "resolve the evidence you cited before" → the same `ev_` ID
    resolves identically from the persisted DB.
@@ -53,9 +54,11 @@ Ask the agent, in one conversation:
 - Commit hash of the merged PR-V3 the server ran against.
 
 ## Honest-state notes
-- Until PR-P3 merges, search reports `retrieval_mode: lexical_only` with
-  truthful omissions — do not present it as hybrid.
-- Until PR-N2 merges, coverage reports `UNCERTAIN` — the UI/statuses stay
-  honest by contract 12.
+- Record the `retrieval_mode` the tool actually reports — do not label the
+  result hybrid unless the payload says so. (PR-P3/#12 was superseded by the
+  merged PR-P4/#15 retrieval work.)
+- With PR-N2 (#18) merged, coverage runs the real candidate search: report
+  whatever status comes back (IMPLEMENTED / MISSING / UNCERTAIN) per contract
+  12 — the statuses stay honest by construction.
 - `python -m verity.mcp` never substitutes a fake; it exits if the real
   service is unavailable.

@@ -46,7 +46,7 @@ def test_refund_within_window():
     from datetime import date, timedelta
     purchase = Purchase(date(2026, 10, 1))
     assert accept_refund(purchase, date(2026, 10, 31))
-    assert not accept_refund(purchase, date(2026, 10, 32))
+    assert not accept_refund(purchase, date(2026, 11, 1))
 '''
 
 
