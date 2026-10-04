@@ -45,6 +45,9 @@ CHUNKER_VERSION = "1.0.0"
 
 _FTS_SPECIAL = re.compile(r'["^~*:\-()\[\]{}]')
 
+#: Sentinel: distinguish "no prepared observation" from an observed None.
+_UNSET = object()
+
 
 def _utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -74,6 +77,9 @@ class SqliteKnowledgeStore:
         self._originals = self._data_dir / "originals"
         self._lock = asyncio.Lock()
         self._conn: sqlite3.Connection | None = None
+        #: Active-version observations from prepare_ingestion, keyed by
+        #: version_id, for stale-activation detection (contract 16).
+        self._prepared_active: dict[str, str | None] = {}
 
     # -- connection lifecycle -------------------------------------------------
 
@@ -228,7 +234,18 @@ class SqliteKnowledgeStore:
         if existing is not None:
             version_id = UUID(existing["version_id"])
             return IngestionIdentity(source_id, document_id, version_id, version_id)
-        return IngestionIdentity(source_id, document_id, new_uuid4(), None)
+        version_id = new_uuid4()
+        # Observe the current active version for stale-activation detection:
+        # activate_ingestion must not overwrite a version activated after this
+        # preparation (contract 16).
+        doc_row = self.conn.execute(
+            "SELECT active_version_id FROM documents WHERE document_id = ?",
+            (str(document_id),),
+        ).fetchone()
+        self._prepared_active[str(version_id)] = (
+            doc_row["active_version_id"] if doc_row else None
+        )
+        return IngestionIdentity(source_id, document_id, version_id, None)
 
 
     async def activate_ingestion(
@@ -334,6 +351,19 @@ class SqliteKnowledgeStore:
                     (document_id, source_id, name, parsed.media_type,
                      parsed.kind.value, SCHEMA_VERSION),
                 )
+                # Stale-activation guard (contract 16): capture the currently
+                # active version and refuse to overwrite a newer one.
+                current = conn.execute(
+                    "SELECT active_version_id FROM documents WHERE document_id = ?",
+                    (document_id,),
+                ).fetchone()["active_version_id"]
+                expected = self._prepared_active.pop(version_id, _UNSET)
+                if expected is not _UNSET and expected != current:
+                    raise VerityError(
+                        "INTERNAL_ERROR",
+                        "conflicting activation; retry preparation",
+                        {"reason": "active version changed since preparation"},
+                    )
                 conn.execute(
                     "INSERT INTO document_versions (version_id, document_id,"
                     " content_sha256, metadata_json, original_relpath, created_at,"
@@ -376,11 +406,20 @@ class SqliteKnowledgeStore:
                     )
                 self._insert_requirements(requirements, spec_entities, version_id)
                 # Activate only after all canonical rows commit (contract 13).
-                conn.execute(
+                # CAS on the captured active version: never overwrite a newer
+                # active version (contract 16).
+                cursor = conn.execute(
                     "UPDATE documents SET active_version_id = ?, indexed_at = ?,"
-                    " status = 'ready' WHERE document_id = ?",
-                    (version_id, now, document_id),
+                    " status = 'ready' WHERE document_id = ?"
+                    " AND active_version_id IS ?",
+                    (version_id, now, document_id, current),
                 )
+                if cursor.rowcount != 1:
+                    raise VerityError(
+                        "INTERNAL_ERROR",
+                        "conflicting activation; retry preparation",
+                        {"reason": "active version changed during activation"},
+                    )
         except sqlite3.IntegrityError as exc:
             raise VerityError(
                 "INTERNAL_ERROR",
@@ -610,37 +649,59 @@ class SqliteKnowledgeStore:
     # -- embedding writes (private store path; contract 13) --------------------
 
     def save_embedding(
-        self, chunk_id: str, model_id: str, vector: tuple[float, ...]
+        self, chunk_id: str, model_id: str, vector: tuple[float, ...], text: str
     ) -> None:
         """Persist one normalized embedding (little-endian float32 BLOB).
 
         Not part of the frozen ``KnowledgeStore`` protocol — used by the
         ingestion pipeline after canonical activation (contract 16 has no
-        embedding write call; noted in PR-A2 as a boundary gap).
+        embedding write call; noted in PR-A2 as a boundary gap). The vector
+        is normalized here (contract 13 stores normalized vectors) and bound
+        to the exact embedded text via ``text_sha256``.
         """
+        import hashlib
         import struct
 
-        blob = struct.pack(f"{len(vector)}f", *vector)
+        if not vector:
+            raise VerityError("INVALID_REQUEST", "embedding vector must be nonempty")
+        norm = sum(x * x for x in vector) ** 0.5
+        if norm == 0:
+            raise VerityError("INVALID_REQUEST", "embedding vector must be nonzero")
+        normalized = tuple(x / norm for x in vector)
+        text_sha256 = hashlib.sha256(text.encode("utf-8")).hexdigest()
+        blob = struct.pack(f"{len(normalized)}f", *normalized)
         with self.conn:
             self.conn.execute(
                 "INSERT OR REPLACE INTO embeddings (chunk_id, model_id, dimension,"
                 " vector_f32le, text_sha256, created_at) VALUES (?,?,?,?,?,?)",
-                (chunk_id, model_id, len(vector), blob, "", _utcnow()),
+                (chunk_id, model_id, len(normalized), blob, text_sha256, _utcnow()),
             )
 
     # -- coverage persistence (Vanashree computes; Atharv persists) -----------
 
     async def save_coverage(self, result: CoverageResult) -> None:
+        """Persist an immutable coverage run (contract 03/16).
+
+        ``coverage_id`` is an immutable run identity: re-saving the same ID
+        raises, it never overwrites.
+        """
         async with self._lock:
-            with self.conn:
-                self.conn.execute(
-                    "INSERT OR REPLACE INTO coverage_runs (coverage_id,"
-                    " workspace_id, workspace_revision, inspected_at, report_json,"
-                    " schema_version) VALUES (?,?,?,?,?,?)",
-                    (str(result.coverage_id), result.workspace_id,
-                     result.workspace_revision, result.inspected_at,
-                     canonical_json(result.to_dict()), SCHEMA_VERSION),
-                )
+            try:
+                with self.conn:
+                    self.conn.execute(
+                        "INSERT INTO coverage_runs (coverage_id, workspace_id,"
+                        " workspace_revision, inspected_at, report_json,"
+                        " schema_version) VALUES (?,?,?,?,?,?)",
+                        (str(result.coverage_id), result.workspace_id,
+                         result.workspace_revision, result.inspected_at,
+                         canonical_json(result.to_dict()), SCHEMA_VERSION),
+                    )
+            except sqlite3.IntegrityError as exc:
+                raise VerityError(
+                    "INTERNAL_ERROR",
+                    "coverage run already exists; reports are immutable",
+                    {"coverage_id": str(result.coverage_id)},
+                ) from exc
 
     async def get_coverage(self, coverage_id: UUID) -> CoverageResult | None:
         row = self.conn.execute(

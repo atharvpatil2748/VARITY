@@ -17,6 +17,8 @@ from verity.ids import make_chunk_id, make_evidence_id
 from verity.models import (
     Chunk,
     ChunkKind,
+    CoverageResult,
+    CoverageStatus,
     DocumentKind,
     DocumentStatus,
     DocumentMetadata,
@@ -25,6 +27,7 @@ from verity.models import (
     ParsedBlock,
     ParsedDocument,
     Requirement,
+    RequirementCoverage,
     SearchRequest,
     SpecEntity,
 )
@@ -290,3 +293,120 @@ def test_activation_failure_rolls_back(store: SqliteKnowledgeStore) -> None:
         (str(identity.version_id),),
     ).fetchone()[0]
     assert rows == 0
+
+
+# ---------------------------------------------------------------------------
+# Stale activation guard (PR-A2 review finding 2)
+# ---------------------------------------------------------------------------
+
+
+def test_stale_identity_does_not_overwrite_newer_active(store: SqliteKnowledgeStore) -> None:
+    _, first, _ = _ingest(store, b"Version one content.")
+    request = IngestRequest(source_path="specs/payments.md",
+                            source_id=first.document.source_id)
+    # Prepared when v1 was active...
+    stale = run(store.prepare_ingestion(request, "f" * 64, None))
+    # ...but a newer activation lands first (v2 becomes active).
+    _, second, _ = _ingest(store, b"Version two content.",
+                           source_id=first.document.source_id)
+    assert second.created_new_version is True
+    # The stale activation must fail and must NOT overwrite the newer version.
+    chunk = _chunk(stale.version_id, "Stale content.")
+    with pytest.raises(VerityError) as exc:
+        run(store.activate_ingestion(
+            stale, request, _parsed("Stale content."), (chunk,), (), (), b"s"))
+    assert exc.value.code == "INTERNAL_ERROR"
+    doc = run(store.get_document(UUID(first.document.document_id)))
+    assert doc.version_id == second.document.version_id
+
+
+# ---------------------------------------------------------------------------
+# Coverage round trip (PR-A2 review finding 3; for Vanashree N6)
+# ---------------------------------------------------------------------------
+
+
+def _coverage_result(coverage_id: str | None = None) -> CoverageResult:
+    return CoverageResult(
+        schema_version="1.0.0",
+        coverage_id=coverage_id or "c3ddf6fc-feba-4489-a8c1-129d97312b6b",
+        workspace_id="demo",
+        workspace_revision="d" * 64,
+        inspected_at="2026-10-04T10:00:00Z",
+        results=[RequirementCoverage(
+            requirement_id="req_" + "1" * 64,
+            status=CoverageStatus.UNCERTAIN,
+            reason="insufficient test evidence",
+            implementation=[],
+            tests=[],
+            limitations=["no test execution in this run"],
+        )],
+        limitations=["demo run"],
+    )
+
+
+def test_coverage_round_trip(store: SqliteKnowledgeStore) -> None:
+    result = _coverage_result()
+    run(store.save_coverage(result))
+    loaded = run(store.get_coverage(UUID(result.coverage_id)))
+    assert loaded is not None
+    assert loaded.to_dict() == result.to_dict()
+    assert loaded.results[0].status is CoverageStatus.UNCERTAIN
+    # Immutable run identity: a second save with the same ID raises (finding 4).
+    with pytest.raises(VerityError):
+        run(store.save_coverage(result))
+    # Unknown ID returns None.
+    assert run(store.get_coverage(UUID("c3ddf6fc-feba-4489-a8c1-129d97312b6c"))) is None
+
+
+# ---------------------------------------------------------------------------
+# Vector candidates and embedding writes (PR-A2 review findings 3/5)
+# ---------------------------------------------------------------------------
+
+
+def test_vector_candidates_rank_and_active_filter(store: SqliteKnowledgeStore) -> None:
+    _, first, chunk1 = _ingest(store, b"Vector content alpha.")
+    _, _, chunk2 = _ingest(store, b"Vector content beta.")
+    store.save_embedding(chunk1.chunk_id, "test-model", (3.0, 4.0), "Vector content alpha.")
+    store.save_embedding(chunk2.chunk_id, "test-model", (0.0, 1.0), "Vector content beta.")
+    req = SearchRequest(query="vector content", document_ids=None,
+                        document_kinds=None, chunk_kinds=None, limit=8)
+    results = run(store.vector_candidates((0.0, 1.0), req, "test-model", 50))
+    assert [r.chunk.chunk_id for r in results] == [chunk2.chunk_id, chunk1.chunk_id]
+    assert results[0].rank == 1
+    # Stored vectors are normalized by save_embedding (finding 5): cosine in [-1, 1].
+    assert all(-1.0 <= r.raw_score <= 1.0 for r in results)
+    # Superseded versions never surface in active search.
+    _, third, chunk3 = _ingest(store, b"Vector content alpha v2.",
+                               source_id=first.document.source_id)
+    assert third.created_new_version is True
+    store.save_embedding(chunk3.chunk_id, "test-model", (0.0, 1.0), "Vector content alpha v2.")
+    results = run(store.vector_candidates((0.0, 1.0), req, "test-model", 50))
+    assert chunk1.chunk_id not in [r.chunk.chunk_id for r in results]
+
+
+def test_vector_candidates_deterministic_tie_by_chunk_id(store: SqliteKnowledgeStore) -> None:
+    _, _, chunk_a = _ingest(store, b"Tie content one.")
+    _, _, chunk_b = _ingest(store, b"Tie content two.")
+    for chunk in (chunk_a, chunk_b):
+        store.save_embedding(chunk.chunk_id, "test-model", (1.0, 0.0), chunk.text)
+    req = SearchRequest(query="tie content", document_ids=None,
+                        document_kinds=None, chunk_kinds=None, limit=8)
+    results = run(store.vector_candidates((1.0, 0.0), req, "test-model", 50))
+    ids = [r.chunk.chunk_id for r in results]
+    assert ids == sorted(ids)  # equal scores tie-break by chunk_id
+
+
+def test_save_embedding_binds_text_hash(store: SqliteKnowledgeStore) -> None:
+    import hashlib
+
+    _, _, chunk = _ingest(store, b"Embedded text.")
+    store.save_embedding(chunk.chunk_id, "test-model", (1.0, 2.0), "Embedded text.")
+    row = store.conn.execute(
+        "SELECT text_sha256, dimension, vector_f32le FROM embeddings WHERE chunk_id = ?",
+        (chunk.chunk_id,),
+    ).fetchone()
+    assert row["text_sha256"] == hashlib.sha256(b"Embedded text.").hexdigest()
+    assert row["dimension"] == 2
+    # Rejects empty/zero vectors (finding 5).
+    with pytest.raises(VerityError):
+        store.save_embedding(chunk.chunk_id, "test-model", (0.0, 0.0), "Embedded text.")
