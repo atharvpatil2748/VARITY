@@ -20,6 +20,7 @@ No model downloads at serving time; budgets are constructor config
 from __future__ import annotations
 
 import unicodedata
+from dataclasses import replace
 from typing import Any
 from uuid import UUID
 
@@ -73,6 +74,8 @@ class DefaultRetrievalService:
 
     async def search(self, request: SearchRequest) -> RetrievalRun:
         query = self._validated_query(request)
+        # Contract 06: branches match on the trimmed NFC query.
+        request = replace(request, query=query)
         await self._check_scope(request)
 
         lexical = await self._lexical.candidates(request)

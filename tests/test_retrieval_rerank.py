@@ -113,6 +113,16 @@ def test_wrong_length_scores_fall_back_with_omission() -> None:
     assert result.omissions == (RERANKER_UNAVAILABLE,)
 
 
+def test_non_numeric_scores_fall_back_with_omission() -> None:
+    run_data = fused((CHUNK_A, 0.02), (CHUNK_B, 0.01))
+    for bad in (("nope", "nope"), (float("nan"), float("nan")),
+                (None, None)):
+        result = run(rerank(QUERY, run_data, FakeReranker(scores=bad)))
+        assert result.reranker_used is False
+        assert [item.chunk.chunk_id for item in result.items] == [CHUNK_A, CHUNK_B]
+        assert result.omissions == (RERANKER_UNAVAILABLE,)
+
+
 def test_top_30_cap_limits_reranker_input() -> None:
     run_data = fused(*(
         ("chk_" + f"{i:064x}", 1.0 / (60 + i + 1)) for i in range(35)
