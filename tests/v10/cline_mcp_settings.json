@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "verity": {
+      "command": "python",
+      "args": ["-m", "verity.mcp"],
+      "cwd": "C:\\Users\\vandi\\Downloads\\VARITY-git",
+      "env": {},
+      "autoApprove": ["search_evidence", "get_requirement", "get_evidence", "check_coverage"],
+      "disabled": false
+    }
+  }
+}
