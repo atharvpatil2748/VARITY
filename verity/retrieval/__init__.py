@@ -18,6 +18,7 @@ from .branches import (
     BranchResult,
 )
 from .dense import DenseBranch
+from .fusion import FUSED_CAP, RRF_K, FusedCandidate, FusedRun, fuse
 from .interfaces import EmbeddingProvider, Reranker, RetrievalService
 from .lexical import LexicalBranch
 
@@ -26,10 +27,15 @@ __all__ = [
     "BranchResult",
     "DenseBranch",
     "EmbeddingProvider",
+    "FUSED_CAP",
+    "FusedCandidate",
+    "FusedRun",
     "LEXICAL_UNAVAILABLE",
     "LexicalBranch",
+    "RRF_K",
     "Reranker",
     "RetrievalService",
     "SEMANTIC_MODEL_UNAVAILABLE",
     "SEMANTIC_UNAVAILABLE",
+    "fuse",
 ]

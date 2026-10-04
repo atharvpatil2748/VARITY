@@ -32,7 +32,7 @@ BRANCH_CANDIDATE_BUDGET = 50
 class BranchResult:
     """One branch's output: ranked candidates (ranks normalized 1..n) + omissions."""
 
-    items: tuple[RankedChunk, ...]
+    items: tuple[RankedChunk, ...] = ()
     omissions: tuple[str, ...] = ()
 
 
