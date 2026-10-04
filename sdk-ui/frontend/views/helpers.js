@@ -33,5 +33,8 @@ export function emptyState(message) {
 }
 
 export function loadingState() {
-  return el("div", { class: "loading-state" }, el("em", {}, "Loading…"));
+  return el("div", { class: "loading-state" },
+    el("div", { class: "sk" }),
+    el("div", { class: "sk" }),
+    el("div", { class: "sk" }));
 }

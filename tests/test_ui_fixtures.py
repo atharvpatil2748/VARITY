@@ -108,7 +108,10 @@ FIXTURE_TO_DEF = {
     "search.json": "SearchResult",
     "coverage.json": "CoverageResult",
     "evidence.json": "EvidenceLookup",
+    "chat_session.json": "ChatSession",
+    "chat_response.json": "ChatResponse",
     "error_invalid_request.json": "HttpError",
+    "error_sdk_unavailable.json": "HttpError",
 }
 
 
@@ -145,3 +148,25 @@ def test_client_references_only_existing_fixtures() -> None:
         f"client.js references missing fixtures: {sorted(referenced - on_disk)}"
     )
     assert FIXTURE_TO_DEF.keys() <= {f"{name}.json" for name in on_disk}
+
+
+def test_chat_citations_match_resolved_evidence() -> None:
+    """U5 acceptance: citation markers match returned evidence IDs."""
+    fixture = json.loads((FIXTURES / "chat_response.json").read_text(encoding="utf-8"))
+    resolved = {ev["evidence_id"] for ev in fixture["evidence"]}
+    cited = fixture["message"]["citations"]
+    assert cited, "fixture answer must cite evidence"
+    assert set(cited) <= resolved, "every citation must resolve to returned evidence"
+    for marker in cited:
+        assert marker in fixture["message"]["text"], (
+            "citation markers appear in the answer text"
+        )
+
+
+def test_sdk_unavailable_error_is_honest_503() -> None:
+    """U5 acceptance: SDK absence is a truthful SDK_UNAVAILABLE error."""
+    fixture = json.loads(
+        (FIXTURES / "error_sdk_unavailable.json").read_text(encoding="utf-8")
+    )
+    assert fixture["error"]["code"] == "SDK_UNAVAILABLE"
+    assert fixture["error"]["retryable"] is True
