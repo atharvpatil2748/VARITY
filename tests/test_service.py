@@ -133,6 +133,21 @@ def test_store_none_translated_to_typed_errors(service) -> None:
     assert exc.value.code == "EVIDENCE_NOT_FOUND"
 
 
+def test_malformed_ids_are_invalid_request(service) -> None:
+    # PR-A4 review finding 3 (contract 17: ID syntax -> INVALID_REQUEST).
+    for bad in ("REQ_123", "req_ZZ", "", "req_" + "A" * 64):
+        with pytest.raises(VerityError) as exc:
+            run(service.get_requirement(bad))
+        assert exc.value.code == "INVALID_REQUEST", bad
+    for bad in ("not-a-uuid", "ebc2352e-ff9c-1167-b11a-1e30d550411d", 42):
+        with pytest.raises(VerityError) as exc:
+            run(service.get_document(bad))
+        assert exc.value.code == "INVALID_REQUEST", bad
+        with pytest.raises(VerityError) as exc:
+            run(service.get_coverage(bad))
+        assert exc.value.code == "INVALID_REQUEST", bad
+
+
 def test_check_coverage_persists_immutable_report(service, workspace_root) -> None:
     data = (FIXTURES / "payments.md").read_bytes()
     result = run(service.ingest(
@@ -171,6 +186,15 @@ def test_validate_wire_real_service_outputs(service) -> None:
     result = run(service.ingest(
         IngestRequest(source_path="payments.md", mode=IngestMode.AUTO, source_id=None),
         data))
+    # PR-A4 review findings 1/2: ingest and list pages carry schema_version.
+    assert schema_check.validate(
+        result.to_dict(), SCHEMA["$defs"]["IngestResult"], SCHEMA) == []
+    docs = run(service.list_documents(10, 0, None))
+    assert schema_check.validate(
+        docs.to_dict(), SCHEMA["$defs"]["ListPageDocument"], SCHEMA) == []
+    sources = run(service.list_sources(10, 0))
+    assert schema_check.validate(
+        sources.to_dict(), SCHEMA["$defs"]["ListPageSource"], SCHEMA) == []
     requirement_id = make_requirement_id(
         UUID(result.document.source_id), "REQ-001")
     found = run(service.search_evidence(_search("refund window")))

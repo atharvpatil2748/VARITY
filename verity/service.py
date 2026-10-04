@@ -26,6 +26,7 @@ must not claim a cancelled TIMEOUT stopped work it cannot interrupt.
 
 from __future__ import annotations
 
+import re
 from typing import Protocol, runtime_checkable
 from uuid import UUID
 
@@ -49,6 +50,33 @@ from .models import (
     SearchResult,
 )
 from .storage import SqliteKnowledgeStore
+
+#: Contract 17: malformed ID syntax is INVALID_REQUEST, never *_NOT_FOUND.
+_REQ_ID_RE = re.compile(r"^req_[0-9a-f]{64}$")
+_UUID4_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+)
+
+
+def _require_req_id(requirement_id: str) -> str:
+    if not isinstance(requirement_id, str) or not _REQ_ID_RE.fullmatch(requirement_id):
+        raise VerityError(
+            "INVALID_REQUEST",
+            "requirement_id must match req_ + 64 lowercase hex",
+            {"field": "requirement_id"},
+        )
+    return requirement_id
+
+
+def _require_uuid4(value: str, field: str) -> str:
+    text = str(value)
+    if not _UUID4_RE.fullmatch(text):
+        raise VerityError(
+            "INVALID_REQUEST",
+            f"{field} must be a UUIDv4 string",
+            {"field": field},
+        )
+    return text
 
 
 @runtime_checkable
@@ -138,6 +166,7 @@ class DefaultVerityService:
         return await self._evidence.from_retrieval(request, run)
 
     async def get_requirement(self, requirement_id: str) -> Requirement:
+        _require_req_id(requirement_id)
         requirement = await self._store.get_requirement(requirement_id)
         if requirement is None:
             raise VerityError(
@@ -157,6 +186,7 @@ class DefaultVerityService:
         return result
 
     async def get_coverage(self, coverage_id: UUID) -> CoverageResult:
+        _require_uuid4(coverage_id, "coverage_id")
         result = await self._store.get_coverage(coverage_id)
         if result is None:
             raise VerityError(
@@ -167,6 +197,7 @@ class DefaultVerityService:
         return result
 
     async def get_document(self, document_id: UUID) -> Document:
+        _require_uuid4(document_id, "document_id")
         document = await self._store.get_document(document_id)
         if document is None:
             raise VerityError(

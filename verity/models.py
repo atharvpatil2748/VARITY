@@ -834,18 +834,30 @@ class IngestRequest(VerityModel):
 class IngestResult(VerityModel):
     document: Document
     created_new_version: bool
+    schema_version: str = SCHEMA_VERSION
+
+    def validate(self) -> None:
+        _check(self.schema_version == SCHEMA_VERSION,
+               "schema_version must be 1.0.0", "schema_version")
 
 
 @dataclass(frozen=True)
 class ListPage(VerityModel):
-    """Generic list page: ``{items, total, limit, offset}`` (contract 11)."""
+    """Generic list page: ``{schema_version, items, total, limit, offset}``.
 
-    items: list
+    Wire shapes are ``ListPageDocument``/``ListPageSource`` (contract 21),
+    which require ``schema_version: "1.0.0"``.
+    """
+
+    items: list[Any]
     total: int
     limit: int
     offset: int = 0
+    schema_version: str = SCHEMA_VERSION
 
     def validate(self) -> None:
+        _check(self.schema_version == SCHEMA_VERSION,
+               "schema_version must be 1.0.0", "schema_version")
         _check(self.total >= 0, "total must be >=0", "total")
         _check(self.limit >= 1, "limit must be >=1", "limit")
         _check(self.offset >= 0, "offset must be >=0", "offset")
