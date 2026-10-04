@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0.0",
+  "code": "REQUIREMENT_NOT_FOUND",
+  "message": "No active requirement matches the given requirement ID.",
+  "details": null,
+  "request_id": "b4031e7a-9294-4a46-802f-43a738fdb713",
+  "retryable": false
+}
