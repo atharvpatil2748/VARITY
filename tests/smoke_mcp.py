@@ -1,11 +1,12 @@
-"""V0 smoke test for the MCP SDK + VERITY MCP scaffold (fully offline).
+"""Smoke test for the real VERITY MCP server (roadmap V2-V4), fully offline.
 
-Validates, on this exact machine:
-  1. installed mcp version + structuredContent support
-  2. in-memory client<->server session: initialize, tools/list, tools/call
-     success, dual-payload parity, in-band error results
-  3. REAL stdio subprocess round-trip: spawn ``python -m verity.mcp`` as a
-     child process exactly the way Cline would, then call a tool over pipes.
+Validates on this exact machine:
+  1. installed mcp version + structuredContent support,
+  2. an in-memory client<->server session over FakeVerityService: initialize
+     handshake, tools/list with the four frozen tools, successful tools/call
+     with dual-payload parity, and canonical in-band errors,
+  3. a REAL stdio subprocess round-trip through tests/_stdio_entry.py,
+     spawned exactly the way an external Cline client would.
 
 Run from repo root:  python tests/smoke_mcp.py
 """
@@ -19,14 +20,23 @@ from importlib.metadata import version as pkg_version
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))  # make the verity package importable
+TESTS = Path(__file__).resolve().parent
+for _p in (str(ROOT), str(TESTS)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 import mcp.types as types  # noqa: E402
 from mcp.client.session import ClientSession  # noqa: E402
 from mcp.client.stdio import StdioServerParameters, stdio_client  # noqa: E402
 from mcp.shared.memory import create_client_server_memory_streams  # noqa: E402
 
+from fakes.fake_verity_service import FakeVerityService  # noqa: E402
 from verity.mcp.server import build_server  # noqa: E402
+
+REQ_ID = "req_1d89bd403b85bcab97977f891a494c9788e5b7571e43a938c3b2d08c454ffbd2"
+EV_ID = "ev_0a9948f2aa8b8cc5e499ef43626c5847eeab8df548ba5961e38a9a1126e4dc8e"
+BAD_REQ_ID = "req_" + "f" * 64
+FOUR = ["check_coverage", "get_evidence", "get_requirement", "search_evidence"]
 
 _RESULTS: list[tuple[str, bool]] = []
 
@@ -38,54 +48,100 @@ def check(label: str, ok: bool, detail: str = "") -> None:
     print(f"  [{status}] {label}{suffix}")
 
 
-async def in_memory_test() -> None:
-    print("\nTest 1: in-memory session (no subprocess)")
+def load_fixtures() -> dict:
+    fixture_dir = TESTS / "fixtures" / "v1"
+    stems = ("search_result", "search_result_empty", "requirement", "evidence_lookup", "coverage_result")
+    return {stem: json.loads((fixture_dir / f"{stem}.json").read_text(encoding="utf-8")) for stem in stems}
+
+
+def parity(result) -> bool:
+    """content[0].text must be the identical JSON of structuredContent."""
+    return bool(result.content) and json.loads(result.content[0].text) == result.structured_content
+
+
+async def in_memory_test(fixtures: dict) -> None:
+    print("\nTest 1: in-memory session over FakeVerityService")
+    service = FakeVerityService(fixtures)
+    server = build_server(service)
     async with create_client_server_memory_streams() as (client_streams, server_streams):
-        server = build_server()
-        options = server.create_initialization_options()
-        server_task = asyncio.create_task(server.run(*server_streams, options))
+        server_task = asyncio.create_task(server.run(*server_streams, server.create_initialization_options()))
         try:
-            # mcp 2.x: ClientSession MUST be entered as an async context manager
             async with ClientSession(*client_streams) as client:
                 init = await client.initialize()
                 check(
                     "initialize handshake",
-                    bool(init.protocol_version),
-                    f"protocol={init.protocol_version} server={init.server_info.name}",
+                    init.server_info.name == "verity-mcp",
+                    f"server={init.server_info.name} v{init.server_info.version}",
                 )
 
-                tools = await client.list_tools()
-                names = [t.name for t in tools.tools]
-                check("tools/list returns echo + fail", names == ["echo", "fail"], f"got {names}")
+                listed = await client.list_tools()
+                names = sorted(t.name for t in listed.tools)
+                check("tools/list returns the four frozen tools", names == FOUR, f"got {names}")
+
+                search = await client.call_tool("search_evidence", {"query": "refund window"})
                 check(
-                    "echo tool advertises inputSchema",
-                    tools.tools[0].input_schema.get("required") == ["text"],
+                    "search_evidence returns canonical SearchResult",
+                    search.structured_content == fixtures["search_result"],
+                )
+                check("search_evidence dual-payload parity", parity(search))
+                check("search_evidence is_error=False", search.is_error is False)
+                check("search_evidence called the service once", service.call_counts["search_result"] == 1)
+
+                empty = await client.call_tool("search_evidence", {"query": "zz-no-match"})
+                check(
+                    "no-match search is a success with empty items",
+                    empty.is_error is False and empty.structured_content["items"] == [],
                 )
 
-                result = await client.call_tool("echo", {"text": "verity-v0-smoke"})
-                sc = result.structured_content
-                check("structuredContent present & correct", isinstance(sc, dict) and sc.get("echo") == "verity-v0-smoke", str(sc))
-                text = result.content[0].text if result.content else ""
-                check("text fallback is identical JSON", json.loads(text) == sc)
-                check("success result is_error=False", result.is_error is False)
-
-                err = await client.call_tool("fail", {})
-                check("error result is_error=True", err.is_error is True)
+                req = await client.call_tool("get_requirement", {"requirement_id": REQ_ID})
                 check(
-                    "error carries canonical code",
-                    isinstance(err.structured_content, dict)
-                    and err.structured_content.get("code") == "INVALID_REQUEST",
-                    str(err.structured_content),
+                    "get_requirement returns canonical Requirement",
+                    req.structured_content == fixtures["requirement"],
+                )
+                check("get_requirement dual-payload parity", parity(req))
+
+                ev = await client.call_tool("get_evidence", {"evidence_id": EV_ID})
+                check(
+                    "get_evidence returns canonical EvidenceLookup",
+                    ev.structured_content == fixtures["evidence_lookup"],
                 )
                 check(
-                    "error text parity",
-                    json.loads(err.content[0].text) == err.structured_content,
+                    "get_evidence direct lookup has null score",
+                    ev.structured_content["evidence"]["score"] is None,
+                )
+
+                cov = await client.call_tool(
+                    "check_coverage", {"requirement_ids": [REQ_ID], "workspace_id": "demo"}
+                )
+                check(
+                    "check_coverage returns canonical CoverageResult",
+                    cov.structured_content == fixtures["coverage_result"],
+                )
+                check("check_coverage dual-payload parity", parity(cov))
+
+                invalid = await client.call_tool("get_requirement", {"requirement_id": "bad"})
+                check(
+                    "invalid ID -> in-band INVALID_REQUEST",
+                    invalid.is_error is True and invalid.structured_content["code"] == "INVALID_REQUEST",
+                )
+                check(
+                    "error carries request_id",
+                    isinstance(invalid.structured_content.get("request_id"), str)
+                    and len(invalid.structured_content["request_id"]) == 36,
+                )
+                check("error dual-payload parity", parity(invalid))
+
+                missing = await client.call_tool("get_requirement", {"requirement_id": BAD_REQ_ID})
+                check(
+                    "unknown ID -> REQUIREMENT_NOT_FOUND",
+                    missing.is_error is True
+                    and missing.structured_content["code"] == "REQUIREMENT_NOT_FOUND",
                 )
         finally:
             server_task.cancel()
             try:
                 await server_task
-            except (asyncio.CancelledError, Exception):
+            except BaseException:
                 pass
 
 
@@ -93,11 +149,10 @@ async def stdio_subprocess_test() -> None:
     print("\nTest 2: REAL stdio subprocess (spawned like Cline would)")
     params = StdioServerParameters(
         command=sys.executable,
-        args=["-m", "verity.mcp"],
+        args=[str(TESTS / "_stdio_entry.py")],
         cwd=str(ROOT),
     )
-    async with stdio_client(params) as streams:
-        read, write = streams
+    async with stdio_client(params) as (read, write):
         async with ClientSession(read, write) as client:
             init = await client.initialize()
             check(
@@ -105,19 +160,17 @@ async def stdio_subprocess_test() -> None:
                 init.server_info.name == "verity-mcp",
                 f"server={init.server_info.name} v{init.server_info.version}",
             )
+            listed = await client.list_tools()
+            names = sorted(t.name for t in listed.tools)
+            check("subprocess tools/list", names == FOUR, f"got {names}")
 
-            tools = await client.list_tools()
-            names = [t.name for t in tools.tools]
-            check("subprocess tools/list", names == ["echo", "fail"], f"got {names}")
-
-            result = await client.call_tool("echo", {"text": "over-real-pipes"})
-            sc = result.structured_content
+            result = await client.call_tool("search_evidence", {"query": "over real pipes"})
             check(
                 "subprocess tools/call structuredContent",
-                isinstance(sc, dict) and sc.get("echo") == "over-real-pipes",
-                str(sc),
+                result.structured_content is not None
+                and result.structured_content["total_returned"] >= 1,
             )
-            check("subprocess dual-payload parity", json.loads(result.content[0].text) == sc)
+            check("subprocess dual-payload parity", parity(result))
             check("subprocess success is_error=False", result.is_error is False)
 
 
@@ -126,7 +179,8 @@ async def main_async() -> None:
     fields = list(types.CallToolResult.model_fields)
     check("CallToolResult supports structured_content", "structured_content" in fields, str(fields))
 
-    await in_memory_test()
+    fixtures = load_fixtures()
+    await in_memory_test(fixtures)
     await stdio_subprocess_test()
 
     passed = sum(1 for _, ok in _RESULTS if ok)

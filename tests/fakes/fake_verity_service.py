@@ -21,6 +21,10 @@ import copy
 import re
 from typing import Any
 
+from verity.errors import VerityError  # canonical typed failure (contract 17)
+
+__all__ = ["FakeVerityService", "VerityError"]
+
 _REQ_RE = re.compile(r"^req_[0-9a-f]{64}$")
 _EV_RE = re.compile(r"^ev_[0-9a-f]{64}$")
 _WORKSPACE_RE = re.compile(r"^[a-z][a-z0-9_-]{0,31}$")
@@ -34,25 +38,10 @@ REQUIRED_FIXTURES = (
 )
 
 
-class VerityError(Exception):
-    """Typed public failure per contract 17.
-
-    Core/adapters raise this; the transport adapter adds ``request_id`` and
-    serializes the canonical ``Error`` object from contract 03.
-    """
-
-    def __init__(
-        self,
-        code: str,
-        message: str,
-        details: dict[str, Any] | None = None,
-        retryable: bool = False,
-    ) -> None:
-        super().__init__(message)
-        self.code = code
-        self.message = message
-        self.details = details
-        self.retryable = retryable
+def _as_dict(request: Any) -> Any:
+    """Accept a typed canonical request (contract 16) or its plain dict form."""
+    to_dict = getattr(request, "to_dict", None)
+    return to_dict() if callable(to_dict) else request
 
 
 class FakeVerityService:
@@ -78,8 +67,9 @@ class FakeVerityService:
         if not condition:
             raise VerityError(code, message, details)
 
-    async def search_evidence(self, request: dict[str, Any]) -> dict[str, Any]:
+    async def search_evidence(self, request: Any) -> dict[str, Any]:
         self.call_counts["search_result"] += 1
+        request = _as_dict(request)
         self._require(isinstance(request, dict), "INVALID_REQUEST", "search request must be an object")
         query = request.get("query")
         self._require(
@@ -139,8 +129,9 @@ class FakeVerityService:
             )
         return copy.deepcopy(lookup)
 
-    async def check_coverage(self, request: dict[str, Any]) -> dict[str, Any]:
+    async def check_coverage(self, request: Any) -> dict[str, Any]:
         self.call_counts["coverage_result"] += 1
+        request = _as_dict(request)
         self._require(isinstance(request, dict), "INVALID_REQUEST", "coverage request must be an object")
         ids = request.get("requirement_ids")
         self._require(
