@@ -61,6 +61,8 @@ class EvidenceService(Protocol):
 # verity/coverage — Vanashree
 class WorkspaceScanner(Protocol):
     async def snapshot(self, workspace_id: str) -> WorkspaceSnapshot: ...
+    async def read_lines(self, snapshot: WorkspaceSnapshot, relative_path: str,
+                         start_line: int, end_line: int) -> str: ...
 class CodeEvidenceRetriever(Protocol):
     async def find(self, requirement: Requirement, snapshot: WorkspaceSnapshot
                    ) -> tuple[tuple[CodeEvidence, ...], tuple[TestEvidence, ...]]: ...
@@ -84,6 +86,8 @@ class VerityService(Protocol):
 ```
 
 `RankedChunk = {chunk: Chunk, rank: integer>=1, raw_score: float}` is an internal public-to-retrieval store record, introduced 1.0.0. `RetrievalRun = {items: tuple[RetrievalResult,...], retrieval_mode: RetrievalMode, reranker_used: bool, completeness: Completeness, omissions: tuple[str,...]}`; all fields required. `WorkspaceSnapshot = {workspace_id: str, root: Path, revision: 64-hex, files: tuple[WorkspaceFile,...]}`; `WorkspaceFile = {relative_path: str, content_sha256: 64-hex, size: int}`. The root is internal and never serialized publicly. `EvidenceLookup`, `IngestRequest`, `IngestResult`, `CoverageRequest`, `ListPage` are defined in `05`, `07`, `11`, `12` and machine schema companion; these are canonical types, not transport duplicates.
+
+**Scanner text handoff (D2, change log 1.0.4):** only `WorkspaceScanner.snapshot` and `WorkspaceScanner.read_lines` perform workspace file I/O; `CodeEvidenceRetriever` and everything downstream obtain file text exclusively through the injected scanner's `read_lines`, never through direct file access. `read_lines(snapshot, relative_path, start_line, end_line)` returns the exact original lines including line endings, with these rules: `relative_path` must be a member of `snapshot.files` (exact match on the safe relative path captured at snapshot time; anything else — unknown path, traversal or symlink form — raises `INVALID_REQUEST` or `WORKSPACE_DENIED` per `17`); `start_line >= 1` and `start_line <= end_line`; each call is capped at 200 lines and 8,000 characters (`LIMIT_EXCEEDED` beyond, within contract 12's 1 MiB per-file cap); and the scanner verifies the file's `content_sha256` against the manifest before returning text — a mismatch (file changed since snapshot) raises `COVERAGE_UNAVAILABLE`, which the coverage service treats as `workspace_changed` -> `UNCERTAIN`, consistent with the revision-drift rule. `WorkspaceSnapshot` stays metadata-only; no serialized field, public wire surface or `21` schema changes.
 
 `IngestionIdentity = {source_id: UUID, document_id: UUID, version_id: UUID, existing_version_id: UUID|null}`. It is required, nonnull except `existing_version_id`, and returned by the store without mutation. For a known source and identical active content, `existing_version_id=version_id` and the coordinator returns the current `IngestResult` without reindexing. For new/changed content it is null; `activate_ingestion` validates the identity and writes source/document/version/blocks/chunks/spec entities atomically. A concurrent conflicting activation retries preparation or raises `INTERNAL_ERROR`; it must not overwrite a newer active version. **Historical origin (D3, change log 1.0.3):** in `get_evidence_origin` only, the returned `Document` describes the version that contains the evidence (which may be historical); its `version_id`, `content_sha256` and `metadata` are that version's. Every other surface of `Document` reports the active version.
 

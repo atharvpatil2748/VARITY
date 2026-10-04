@@ -60,7 +60,7 @@ No constant rebasing: fixture-only work needs no pull. Pull integration after a 
 | Blocker | Affected task/PR | Mocks allow | Hard stop |
 |---|---|---|---|
 | D1 `06` tuple versus `16` `RetrievalRun` | ~~A6/PR-A3, P9/PR-P3, then A7~~ **RESOLVED 2026-10-04 (issue #2, change log 1.0.2)** | Fake retrieval output and RRF work | Cleared: `06` corrected to `RetrievalRun`; pull `Docs/contracts` once before P9/PR-P3 and A6/PR-A3 |
-| D2 scanner-only read lacks text handoff | N3/N6/N7/PR-N2, then A7/V7 | Fake snapshot and evaluator/UI | No real workspace excerpts or production coverage report until approved amendment |
+| D2 scanner-only read lacks text handoff | ~~N3/N6/N7/PR-N2, then A7/V7~~ **RESOLVED 2026-10-04 (issue #8 Option 2, change log 1.0.4)** | Fake snapshot and evaluator/UI | Cleared: `WorkspaceScanner.read_lines` in `16`; pull `Docs/contracts` once before N3/N5/PR-N2 |
 | D3 active `Document.version_id` versus historical origin | ~~A5/A6/PR-A3~~ **RESOLVED 2026-10-04 (issue #7 Option B, change log 1.0.3)** | Active-record readers and evidence fixtures | Cleared: version-bound `Document` allowed in `get_evidence_origin` only; pull `Docs/contracts` once before A5/A6/PR-A3 |
 
 For a contract bug, raise an issue listing affected consumers, exact conflicting clauses, minimal proposed amendment, version impact and tests. The team approves; the contract owner changes docs/version/fixtures per `02_VERITY_VERSIONING_POLICY.md`; affected owners pull once and implement. An implementation bug stays in the owner module; a private library/cache choice is implementation discovery; a layer/ownership change requires separate architecture approval. No feature branch edits frozen contracts unilaterally.
