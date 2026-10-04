@@ -21,6 +21,7 @@ from __future__ import annotations
 import logging
 import uuid
 from dataclasses import dataclass
+from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -28,6 +29,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from verity.errors import SCHEMA_VERSION, VerityError
+from verity.models import VerityModel
 
 log = logging.getLogger("verity.http")
 
@@ -62,7 +64,17 @@ STATUS_BY_CODE: dict[str, int] = {
     "INTERNAL_ERROR": 500,
 }
 
-_SERVICE_METHODS = ("search_evidence", "get_requirement", "get_evidence", "check_coverage")
+_SERVICE_METHODS = (
+    "search_evidence",
+    "get_requirement",
+    "get_evidence",
+    "check_coverage",
+    "ingest",
+    "get_document",
+    "list_documents",
+    "list_sources",
+    "get_coverage",
+)
 
 
 @dataclass(frozen=True)
@@ -92,6 +104,15 @@ def _error_response(err: VerityError, request_id: str, status: int | None = None
         content=_error_body(err, request_id),
         status_code=status if status is not None else STATUS_BY_CODE[err.code],
     )
+
+
+def _to_wire(result: Any) -> dict[str, Any]:
+    """Serialize a service result (canonical model or plain dict) to wire form."""
+    if isinstance(result, VerityModel):
+        return result.to_dict()
+    if isinstance(result, dict):
+        return dict(result)
+    raise VerityError("INTERNAL_ERROR", "service returned an unsupported result type")
 
 
 # ---------------------------------------------------------- exception handlers
@@ -128,13 +149,19 @@ async def _crash_handler(request: Request, exc: Exception) -> JSONResponse:
     return _error_response(VerityError("INTERNAL_ERROR", "internal server error"), _request_id(request))
 
 
-def create_app(service: object, health: HealthState | None = None) -> FastAPI:
+def create_app(
+    service: object,
+    health: HealthState | None = None,
+    gateway: object | None = None,
+    deadlines: dict[str, float] | None = None,
+) -> FastAPI:
     """Build the loopback /api/v1 app bound to a VerityService-like object.
 
-    ``service`` must expose the contract-16 surface (same rule as the MCP
-    server); route handlers (V6/V7) delegate to it exactly once per request.
-    ``health`` carries the truthful HealthState; the fake service default is
-    fine for transport tests, real deployments pass runtime probes.
+    ``service`` must expose the contract-16 surface; every route delegates to
+    it exactly once. ``health`` carries the truthful HealthState. ``gateway``
+    is the Cline SDK gateway for native chat (contract 10); None is the honest
+    unavailable state and chat routes return 503 SDK_UNAVAILABLE. ``deadlines``
+    overrides the contract-09-mirroring route deadlines (tests only).
     """
 
     if not all(callable(getattr(service, name, None)) for name in _SERVICE_METHODS):
@@ -149,6 +176,7 @@ def create_app(service: object, health: HealthState | None = None) -> FastAPI:
     )
     app.state.service = service
     app.state.health = health if health is not None else HealthState()
+    app.state.gateway = gateway
 
     @app.middleware("http")
     async def _canonical_headers(request: Request, call_next):
@@ -178,6 +206,11 @@ def create_app(service: object, health: HealthState | None = None) -> FastAPI:
     app.add_exception_handler(StarletteHTTPException, _http_exception_handler)
     app.add_exception_handler(RequestValidationError, _validation_error_handler)
     app.add_exception_handler(Exception, _crash_handler)
+
+    # Route handlers live in routes.py; imported lazily to avoid a cycle.
+    from verity.http.routes import register_routes
+
+    register_routes(app, deadlines)
     return app
 
 
