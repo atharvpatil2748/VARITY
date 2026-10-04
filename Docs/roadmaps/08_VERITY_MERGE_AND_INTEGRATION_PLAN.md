@@ -59,7 +59,7 @@ No constant rebasing: fixture-only work needs no pull. Pull integration after a 
 
 | Blocker | Affected task/PR | Mocks allow | Hard stop |
 |---|---|---|---|
-| D1 `06` tuple versus `16` `RetrievalRun` | A6/PR-A3, P9/PR-P3, then A7 | Fake retrieval output and RRF work | No final public search signature or real Evidence seam until approved amendment |
+| D1 `06` tuple versus `16` `RetrievalRun` | ~~A6/PR-A3, P9/PR-P3, then A7~~ **RESOLVED 2026-10-04 (issue #2, change log 1.0.2)** | Fake retrieval output and RRF work | Cleared: `06` corrected to `RetrievalRun`; pull `Docs/contracts` once before P9/PR-P3 and A6/PR-A3 |
 | D2 scanner-only read lacks text handoff | N3/N6/N7/PR-N2, then A7/V7 | Fake snapshot and evaluator/UI | No real workspace excerpts or production coverage report until approved amendment |
 | D3 active `Document.version_id` versus historical origin | A5/A6/PR-A3 | Active-record readers and evidence fixtures | No historical origin/Evidence merge until approved amendment |
 
