@@ -1,0 +1,10 @@
+{
+  "error": {
+    "schema_version": "1.0.0",
+    "code": "SDK_UNAVAILABLE",
+    "message": "Cline SDK agent is not available; native chat reports unavailable rather than substituting another agent",
+    "details": null,
+    "request_id": "7ba7b810-9dad-41d1-87b4-00c04fd430c8",
+    "retryable": true
+  }
+}

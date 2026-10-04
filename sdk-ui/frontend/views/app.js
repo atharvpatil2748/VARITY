@@ -4,6 +4,7 @@ import { api } from "../api-mock/client.js";
 import { documentsView, sourcesView, uploadView } from "./documents.js";
 import { searchView, evidenceView } from "./search.js";
 import { coverageView } from "./coverage.js";
+import { chatView } from "./chat.js";
 import { loadingState } from "./helpers.js";
 
 const outlet = document.getElementById("view");
@@ -13,6 +14,7 @@ const routes = {
   sources: async () => sourcesView(api),
   search: async () => searchView(api, openEvidence),
   coverage: async () => coverageView(api),
+  chat: async () => chatView(api),
 };
 
 let uploadPanel = null;

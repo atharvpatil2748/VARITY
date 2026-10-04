@@ -19,7 +19,10 @@ const FIXTURES = {
   search: "./fixtures/search.json",
   coverage: "./fixtures/coverage.json",
   evidence: "./fixtures/evidence.json",
+  chatSession: "./fixtures/chat_session.json",
+  chatResponse: "./fixtures/chat_response.json",
   errorInvalidRequest: "./fixtures/error_invalid_request.json",
+  errorSdkUnavailable: "./fixtures/error_sdk_unavailable.json",
 };
 
 export class ApiError extends Error {
@@ -90,6 +93,12 @@ export class MockApiClient {
 
   /** GET /evidence/{id} -> EvidenceLookup (score is null on direct lookup) */
   async getEvidence() { return this._load("evidence"); }
+
+  /** POST /chat/sessions -> ChatSession (201); 503 SDK_UNAVAILABLE honest */
+  async createChatSession() { return this._load("chatSession"); }
+
+  /** POST /chat/sessions/{id}/messages -> ChatResponse (real SDK answer) */
+  async sendChatMessage() { return this._load("chatResponse"); }
 }
 
 export const api = new MockApiClient();
