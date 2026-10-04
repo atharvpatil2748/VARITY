@@ -28,7 +28,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from ._compat import VerityError
+from verity.errors import VerityError
 
 SPEC_PARSER_NAME = "verity_spec"
 SPEC_PARSER_VERSION = "1.0.0"

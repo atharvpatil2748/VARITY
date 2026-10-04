@@ -27,7 +27,7 @@ from types import SimpleNamespace
 from typing import Any, Mapping
 from uuid import UUID
 
-from ._compat import VerityError
+from verity.errors import VerityError
 
 CHUNKER_VERSION = "1.0"
 

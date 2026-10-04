@@ -21,7 +21,7 @@ sys.path.insert(0, str(TESTS_DIR))
 
 from support.pdf_builder import build_text_pdf
 
-from verity.ingestion._compat import VerityError
+from verity.errors import VerityError
 from verity.ingestion.parsers import ParserRouter
 
 FIXTURES = TESTS_DIR / "fixtures" / "contracts_v1"

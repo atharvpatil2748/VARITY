@@ -113,3 +113,17 @@ def test_golden_ids_fixture_matches_contract03_vectors() -> None:
     assert golden["evidence"]["expected"] == (
         "ev_0a9948f2aa8b8cc5e499ef43626c5847eeab8df548ba5961e38a9a1126e4dc8e"
     )
+
+
+def test_json_instances_construct_canonical_verity_models() -> None:
+    """Canonical JSON instances must construct the real verity.models types."""
+    verity_models = pytest.importorskip("verity.models")
+    parsed_dict = json.loads((FIXTURES / "expected_payments_parsed.json").read_text("utf-8"))
+    parsed_model = verity_models.ParsedDocument.from_dict(parsed_dict)
+    assert parsed_model.kind.value == "spec"
+    assert len(parsed_model.blocks) == len(parsed_dict["blocks"])
+    drafts = json.loads((FIXTURES / "expected_payments_chunks.json").read_text("utf-8"))
+    for draft_dict in drafts:
+        draft_model = verity_models.ChunkDraft.from_dict(draft_dict)
+        assert draft_model.text == draft_dict["text"]
+        assert draft_model.kind.value == draft_dict["kind"]

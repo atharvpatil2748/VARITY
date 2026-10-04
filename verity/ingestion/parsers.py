@@ -27,7 +27,7 @@ import os
 import re
 import zlib
 
-from ._compat import VerityError
+from verity.errors import VerityError
 from .spec import SpecParser, looks_like_spec
 
 PARSER_VERSION = "1.0.0"

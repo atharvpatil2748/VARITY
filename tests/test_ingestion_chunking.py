@@ -24,7 +24,7 @@ sys.path.insert(0, str(TESTS_DIR))
 from fakes.fake_ids import FakeIdMaker
 from support import schema_check
 
-from verity.ingestion._compat import VerityError
+from verity.errors import VerityError
 from verity.ingestion.chunking import CentralMaterializer, GeneralChunker
 from verity.ingestion.parsers import ParserRouter
 from verity.ingestion.spec import SpecParser

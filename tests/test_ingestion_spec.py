@@ -19,7 +19,7 @@ REPO_ROOT = TESTS_DIR.parent
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(TESTS_DIR))
 
-from verity.ingestion._compat import VerityError
+from verity.errors import VerityError
 from verity.ingestion.spec import SpecParser, looks_like_spec
 
 FIXTURES = TESTS_DIR / "fixtures" / "contracts_v1"
