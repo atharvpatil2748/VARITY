@@ -1,6 +1,12 @@
-/** VERITY UI router (owner Vanashree). U2–U4 views over the typed mock. */
+/** VERITY UI router (owner Vanashree). U2–U5 views over the typed client.
+ *
+ * U6 real switch: add ?api=real to the URL to swap the mock client for
+ * the real /api/v1 client (contract 11); default remains the offline
+ * mock so the static demo works without a backend.
+ */
 
-import { api } from "../api-mock/client.js";
+import { MockApiClient } from "../api-mock/client.js";
+import { RealApiClient } from "../api-client.js";
 import { documentsView, sourcesView, uploadView } from "./documents.js";
 import { searchView, evidenceView } from "./search.js";
 import { coverageView } from "./coverage.js";
@@ -8,6 +14,11 @@ import { chatView } from "./chat.js";
 import { loadingState } from "./helpers.js";
 
 const outlet = document.getElementById("view");
+
+const useRealApi = new URLSearchParams(window.location.search).get("api") === "real";
+export const api = useRealApi
+  ? new RealApiClient()
+  : new MockApiClient();
 
 const routes = {
   documents: async () => documentsView(api),

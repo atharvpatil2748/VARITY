@@ -55,7 +55,7 @@ export async function searchView(api, onOpenEvidence) {
     }
     results.replaceChildren(loadingState());
     try {
-      const result = await api.search();
+      const result = await api.search(input.value.trim());
       results.replaceChildren(
         el("small", { class: "muted" },
           `${result.retrieval_mode}, reranker ${result.reranker_used ? "on" : "off"}, ` +

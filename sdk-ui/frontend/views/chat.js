@@ -79,7 +79,7 @@ export function chatView(api) {
       el("p", {}, text)));
     transcript.append(loadingState());
     try {
-      const response = await api.sendChatMessage();
+      const response = await api.sendChatMessage(sessionId, input.value.trim());
       transcript.lastChild.replaceWith(assistantMessage(response));
       input.value = "";
     } catch (e) {
