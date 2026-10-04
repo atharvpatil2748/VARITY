@@ -14,9 +14,14 @@ from .workspace import (
     RealWorkspaceScanner,
     manifest_revision,
 )
-from .candidates import CodeEvidenceRetriever, FakeCodeEvidenceRetriever
+from .candidates import (
+    CodeEvidenceRetriever,
+    FakeCodeEvidenceRetriever,
+    RealCodeEvidenceRetriever,
+)
 from .evaluator import DefaultRequirementEvaluator, RequirementEvaluator
-from .service import CoverageService, FakeCoverageService
+from .service import CoverageService, DefaultCoverageService, FakeCoverageService
+from .testrunner import AllowlistedTestRunner
 
 __all__ = [
     "WorkspaceFile",
@@ -27,8 +32,11 @@ __all__ = [
     "manifest_revision",
     "CodeEvidenceRetriever",
     "FakeCodeEvidenceRetriever",
+    "RealCodeEvidenceRetriever",
     "RequirementEvaluator",
     "DefaultRequirementEvaluator",
     "CoverageService",
+    "DefaultCoverageService",
     "FakeCoverageService",
+    "AllowlistedTestRunner",
 ]
