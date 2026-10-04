@@ -11,6 +11,7 @@ from .workspace import (
     WorkspaceScanner,
     WorkspaceSnapshot,
     FakeSnapshotScanner,
+    RealWorkspaceScanner,
     manifest_revision,
 )
 from .candidates import CodeEvidenceRetriever, FakeCodeEvidenceRetriever
@@ -22,6 +23,7 @@ __all__ = [
     "WorkspaceScanner",
     "WorkspaceSnapshot",
     "FakeSnapshotScanner",
+    "RealWorkspaceScanner",
     "manifest_revision",
     "CodeEvidenceRetriever",
     "FakeCodeEvidenceRetriever",
