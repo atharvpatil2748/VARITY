@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0.0",
+  "evidence": {
+    "schema_version": "1.0.0",
+    "evidence_id": "ev_0a9948f2aa8b8cc5e499ef43626c5847eeab8df548ba5961e38a9a1126e4dc8e",
+    "chunk_id": "chk_71bb4eb1f7917adbd4771acd9946ee1a30994af19c4ebbf66ecd2b1e4b89b16a",
+    "kind": "requirement",
+    "quote": "Duplicate refund requests MUST be rejected.",
+    "requirement_id": "req_1d89bd403b85bcab97977f891a494c9788e5b7571e43a938c3b2d08c454ffbd2",
+    "citation": {
+      "evidence_id": "ev_0a9948f2aa8b8cc5e499ef43626c5847eeab8df548ba5961e38a9a1126e4dc8e",
+      "label": "payments-api.md — § Requirements / REQ-003 [REQ-003]",
+      "locator": {
+        "source_id": "24da624f-7fd0-41ea-a49b-8449cbb179d9",
+        "document_id": "ebc2352e-ff9c-4167-b11a-1e30d550411d",
+        "version_id": "129dcd06-1ba1-4f0c-bf7e-c678f905b624",
+        "source_path": "specs/payments.md",
+        "page": null,
+        "start_line": 20,
+        "end_line": 21,
+        "start_offset": null,
+        "end_offset": null,
+        "heading_path": ["Requirements", "REQ-003"]
+      }
+    },
+    "provenance": {
+      "schema_version": "1.0.0",
+      "content_sha256": "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
+      "parser_name": "markdown",
+      "parser_version": "1.0.0",
+      "chunker_version": "1.0.0",
+      "embedding_model": "BAAI/bge-m3@pinned-local-revision",
+      "indexed_at": "2026-10-04T10:00:00Z"
+    },
+    "score": null,
+    "ranking": {
+      "dense_rank": null,
+      "lexical_rank": null,
+      "rrf_score": null,
+      "rerank_score": null
+    }
+  },
+  "context_before": "# Requirements\n## REQ-003: Duplicate requests\n",
+  "context_after": "\n### Constraints\n- Rejection is idempotent per idempotency key.\n"
+}
