@@ -14,6 +14,8 @@
 const FIXTURES = {
   health: "./fixtures/health.json",
   documents: "./fixtures/documents.json",
+  sources: "./fixtures/sources.json",
+  ingestResult: "./fixtures/ingest_result.json",
   search: "./fixtures/search.json",
   coverage: "./fixtures/coverage.json",
   evidence: "./fixtures/evidence.json",
@@ -70,6 +72,12 @@ export class MockApiClient {
 
   /** GET /documents -> ListPage<Document> */
   async listDocuments() { return this._load("documents"); }
+
+  /** GET /sources -> ListPage<Source> */
+  async listSources() { return this._load("sources"); }
+
+  /** POST /documents (multipart) -> IngestResult; 201 new / 200 same bytes */
+  async uploadDocument() { return this._load("ingestResult"); }
 
   /** POST /search -> SearchResult (mock ignores the request body) */
   async search() { return this._load("search"); }
