@@ -103,6 +103,8 @@ def validate(value: object, schema: dict, path: str = "$") -> None:
 FIXTURE_TO_DEF = {
     "health.json": "Health",
     "documents.json": "ListPageDocument",
+    "sources.json": "ListPageSource",
+    "ingest_result.json": "IngestResult",
     "search.json": "SearchResult",
     "coverage.json": "CoverageResult",
     "evidence.json": "EvidenceLookup",
@@ -128,3 +130,18 @@ def test_coverage_fixture_shows_uncertain_honestly() -> None:
     statuses = [r["status"] for r in fixture["results"]]
     assert "UNCERTAIN" in statuses
     assert all(r["reason"] for r in fixture["results"])
+
+
+def test_client_references_only_existing_fixtures() -> None:
+    """Every fixture the typed mock client can load must exist on disk."""
+    import re
+
+    client = (ROOT / "sdk-ui" / "frontend" / "api-mock" / "client.js").read_text(
+        encoding="utf-8"
+    )
+    referenced = set(re.findall(r"fixtures/([a-z_]+)\.json", client))
+    on_disk = {p.stem for p in FIXTURES.glob("*.json")}
+    assert referenced <= on_disk, (
+        f"client.js references missing fixtures: {sorted(referenced - on_disk)}"
+    )
+    assert FIXTURE_TO_DEF.keys() <= {f"{name}.json" for name in on_disk}

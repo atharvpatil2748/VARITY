@@ -9,76 +9,60 @@
     body { margin: 0; background: #f7f8fa; color: #1c2430; }
     header { padding: 14px 24px; background: #10203a; color: #fff; }
     header h1 { font-size: 18px; margin: 0; font-weight: 600; }
-    main { max-width: 880px; margin: 24px auto; padding: 0 16px; }
+    main { max-width: 920px; margin: 24px auto; padding: 0 16px; }
     nav a { margin-right: 16px; color: #24457a; text-decoration: none; }
-    .state { padding: 20px; border: 1px solid #dde3ec; border-radius: 8px;
-             background: #fff; margin-top: 16px; }
-    .status-pill { padding: 2px 10px; border-radius: 999px; font-size: 12px;
-                   font-weight: 600; }
-    .IMPLEMENTED { background: #d9f2e3; color: #12643a; }
-    .PARTIAL { background: #fdeec9; color: #8a5a00; }
-    .MISSING { background: #fbdcdc; color: #8f1f1f; }
-    .UNCERTAIN { background: #e2e6ef; color: #44506a; }
+    nav a:hover { text-decoration: underline; }
+    h2 { font-size: 16px; margin: 8px 0 4px; }
+    h3 { font-size: 13px; margin: 12px 0 4px; }
+    .card, #view > div, #view > form, #view > ul { display: block; }
+    .card { padding: 12px 16px; border: 1px solid #dde3ec; border-radius: 8px;
+            background: #fff; margin-top: 10px; }
+    .card-list { list-style: none; padding: 0; }
+    .muted { color: #5b6472; display: block; }
+    blockquote { margin: 8px 0; padding: 6px 10px; border-left: 3px solid #24457a;
+                background: #f2f5fa; border-radius: 0 6px 6px 0; }
+    pre { background: #eef1f6; padding: 8px 10px; border-radius: 6px;
+          overflow-x: auto; font-size: 12px; margin: 6px 0; }
     code { background: #eef1f6; padding: 1px 5px; border-radius: 4px; }
+    button.link { background: none; border: none; color: #24457a;
+                  cursor: pointer; padding: 0; text-decoration: underline; }
+    .status-pill { padding: 2px 10px; border-radius: 999px; font-size: 12px;
+                   font-weight: 600; display: inline-block; margin-left: 8px; }
+    .status-IMPLEMENTED, .IMPLEMENTED { background: #d9f2e3; color: #12643a; }
+    .status-PARTIAL, .PARTIAL { background: #fdeec9; color: #8a5a00; }
+    .status-MISSING, .MISSING { background: #fbdcdc; color: #8f1f1f; }
+    .status-UNCERTAIN, .UNCERTAIN { background: #e2e6ef; color: #44506a; }
+    .status-pending { background: #eef1f6; color: #44506a; }
+    .status-ready { background: #d9f2e3; color: #12643a; }
+    .status-partial { background: #fdeec9; color: #8a5a00; }
+    .status-failed { background: #fbdcdc; color: #8f1f1f; }
+    .kind { margin-left: 8px; font-size: 12px; color: #5b6472; }
+    .document-head, .coverage-head, .evidence-head { display: flex;
+      align-items: center; gap: 4px; flex-wrap: wrap; }
+    .warnings { color: #8a5a00; font-size: 13px; }
+    .search-form, .upload-form { display: flex; gap: 8px; align-items: center;
+      flex-wrap: wrap; }
+    .upload-form { flex-direction: column; align-items: stretch; }
+    .error-card { border-color: #f0b9b9; background: #fdf3f3; }
+    .empty-state, .loading-state { padding: 16px; color: #5b6472; }
+    .spans summary { cursor: pointer; color: #24457a; margin-top: 6px; }
+    .span-item { margin: 8px 0 12px; }
   </style>
 </head>
 <body>
   <header><h1>VERITY</h1></header>
   <main>
     <nav>
-      <a href="#" data-view="health">Health</a>
       <a href="#" data-view="documents">Documents</a>
+      <a href="#" data-view="sources">Sources</a>
+      <a href="#" data-view="upload">Upload</a>
       <a href="#" data-view="search">Search</a>
       <a href="#" data-view="coverage">Coverage</a>
     </nav>
-    <!-- U2–U4 views render into this container; U1 wires the typed mock. -->
-    <section id="view" class="state" aria-live="polite">Loading…</section>
+    <!-- U2-U4 views render here via views/app.js; data comes only from the
+         typed API client (mock now, real /api/v1 after PR-V3 per U6). -->
+    <section id="view" class="state" aria-live="polite"></section>
   </main>
-  <script type="module">
-    import { api, ApiError } from "./api-mock/client.js";
-    const view = document.getElementById("view");
-    const esc = (s) => String(s).replace(/[&<>"]/g,
-      (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-    const render = (html) => { view.innerHTML = html; };
-    const loading = () => render("<em>Loading…</em>");
-    const failure = (e) => render(
-      e instanceof ApiError
-        ? `<strong>Error ${esc(e.code)}</strong>: ${esc(e.message)} ` +
-          `<small>(request ${esc(e.requestId)})</small>`
-        : `<strong>Unexpected error</strong>: ${esc(e.message)}`);
-
-    async function show(name) {
-      loading();
-      try {
-        if (name === "health") {
-          const h = await api.getHealth();
-          render(`<strong>${esc(h.status)}</strong> — database: ${esc(h.database)}, ` +
-                 `retrieval: ${esc(h.retrieval_mode)}, SDK: ${h.sdk_available}`);
-        } else if (name === "documents") {
-          const page = await api.listDocuments();
-          render(page.items.map((d) =>
-            `<div>${esc(d.name)} <small>(${esc(d.kind)}, ${esc(d.status)})</small></div>`
-          ).join(""));
-        } else if (name === "search") {
-          const result = await api.search();
-          render(result.items.map((ev) =>
-            `<div><strong>${esc(ev.citation.label)}</strong><br>` +
-            `<em>${esc(ev.quote)}</em></div>`).join(""));
-        } else if (name === "coverage") {
-          const report = await api.checkCoverage();
-          render(report.results.map((r) =>
-            `<div><span class="status-pill ${esc(r.status)}">${esc(r.status)}</span> ` +
-            `— ${esc(r.reason)}</div>`).join(""));
-        }
-      } catch (e) { failure(e); }
-    }
-
-    document.querySelectorAll("nav a").forEach((a) =>
-      a.addEventListener("click", (event) => {
-        event.preventDefault();
-        show(a.dataset.view);
-      }));
-    show("health");
-  </script>
+  <script type="module" src="./views/app.js"></script>
 </body>
 </html>
