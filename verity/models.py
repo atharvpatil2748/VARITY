@@ -382,6 +382,12 @@ class Locator(VerityModel):
             "start_line must be <= end_line",
             "start_line",
         )
+        _check(
+            self.start_offset is None or self.end_offset is None
+            or self.start_offset <= self.end_offset,
+            "start_offset must be <= end_offset",
+            "start_offset",
+        )
 
 
 @dataclass(frozen=True)
@@ -765,16 +771,20 @@ class SearchRequest(VerityModel):
 class RetrievalResult(VerityModel):
     chunk: Chunk
     score: float
-    dense_rank: int | None = None
-    lexical_rank: int | None = None
-    rrf_score: float | None = None
-    rerank_score: float | None = None
+    dense_rank: int | None
+    lexical_rank: int | None
+    rrf_score: float | None
+    rerank_score: float | None
 
     def validate(self) -> None:
         _check(self.dense_rank is None or self.dense_rank >= 1,
                "dense_rank must be >=1 or null", "dense_rank")
         _check(self.lexical_rank is None or self.lexical_rank >= 1,
                "lexical_rank must be >=1 or null", "lexical_rank")
+        # All four ranking fields are required on the wire (contract 21);
+        # rrf_score is required and non-null (contract 03).
+        _check(self.rrf_score is not None, "rrf_score must not be null",
+               "rrf_score")
 
 
 @dataclass(frozen=True)

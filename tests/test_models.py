@@ -310,3 +310,40 @@ def test_verity_error_defaults_and_serialization() -> None:
 
 def test_all_contract_codes_present() -> None:
     assert len(ERROR_CODES) == 23
+
+
+# ---------------------------------------------------------------------------
+# Review tightenings (PR-A1 review observations a/b)
+# ---------------------------------------------------------------------------
+
+
+def test_locator_offset_pair_must_be_ordered() -> None:
+    payload = copy.deepcopy(LOCATOR)
+    payload["start_offset"] = 50
+    payload["end_offset"] = 10
+    with pytest.raises(VerityError) as exc:
+        Locator.from_dict(payload)
+    assert "start_offset" in exc.value.details["field"]
+
+
+def test_retrieval_result_ranking_fields_required() -> None:
+    from verity.models import RetrievalResult
+
+    chunk = Chunk.from_dict(CHUNK)
+    payload = {
+        "chunk": CHUNK,
+        "score": 0.0317,
+        "dense_rank": 1,
+        "lexical_rank": 2,
+        "rerank_score": None,
+    }
+    # rrf_score omitted although required (contract 21).
+    with pytest.raises(VerityError):
+        RetrievalResult.from_dict(payload)
+    payload["rrf_score"] = 0.0317
+    result = RetrievalResult.from_dict(payload)
+    assert result.chunk == chunk
+    # rrf_score present but null violates contract 03 (non-null).
+    payload["rrf_score"] = None
+    with pytest.raises(VerityError):
+        RetrievalResult.from_dict(payload)
