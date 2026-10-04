@@ -64,3 +64,69 @@ class FakeRetrievalService:
     async def search(self, request: Mapping[str, Any]) -> dict:
         self.requests.append(request)
         return self._run
+
+
+class FakeEmbeddingProvider:
+    """Pre-provisioned embedding stand-in (P6); never loads/downloads models."""
+
+    model_id = "fake/bge-m3@test"
+
+    def __init__(self, vector: tuple[float, ...] = (1.0, 0.0),
+                 fail: bool = False) -> None:
+        self.vector = vector
+        self.fail = fail
+        self.embed_calls: list[str] = []
+
+    async def embed(self, text: str) -> tuple[float, ...]:
+        self.embed_calls.append(text)
+        if self.fail:
+            raise RuntimeError("model not provisioned")
+        return self.vector
+
+    async def embed_batch(self, texts: tuple[str, ...]) -> tuple[tuple[float, ...], ...]:
+        return tuple(await self.embed(text) for text in texts)
+
+
+class FakeCandidateStore:
+    """Scriptable candidate reader for P6 branch tests (no SQL)."""
+
+    def __init__(self, lexical=None, vector=None) -> None:
+        self.lexical = tuple(lexical or ())
+        self.vector = tuple(vector or ())
+        self.fail_lexical = False
+        self.fail_vector = False
+        self.lexical_requests: list[Any] = []
+        self.vector_requests: list[Any] = []
+
+    async def lexical_candidates(self, request, limit):
+        self.lexical_requests.append((request, limit))
+        if self.fail_lexical:
+            raise RuntimeError("fts index corrupt")
+        return self.lexical[:limit]
+
+    async def vector_candidates(self, query_vector, request, model_id, limit):
+        self.vector_requests.append((query_vector, request, model_id, limit))
+        if self.fail_vector:
+            raise RuntimeError("vector scan failed")
+        return self.vector[:limit]
+
+
+def ranked(chunk_id: str, rank: int = 1, score: float = 1.0):
+    """Build a RankedChunk over a minimal canonical Chunk (test helper)."""
+    from verity.models import Chunk, ChunkKind, Locator
+    from verity.storage.base import RankedChunk
+
+    locator = Locator(
+        source_id="24da624f-7fd0-41ea-a49b-8449cbb179d9",
+        document_id="ebc2352e-ff9c-4167-b11a-1e30d550411d",
+        version_id="129dcd06-1ba1-4f0c-bf7e-c678f905b624",
+        source_path="specs/payments.md", page=None,
+        start_line=1, end_line=1, start_offset=None, end_offset=None,
+        heading_path=["Requirements"],
+    )
+    chunk = Chunk(
+        schema_version="1.0.0", chunk_id=chunk_id, kind=ChunkKind.GENERAL_CHUNK,
+        text="Refund window policy.", locator=locator,
+        block_start=0, block_end=0, ordinal=0, requirement_id=None,
+    )
+    return RankedChunk(chunk=chunk, rank=rank, raw_score=score)
