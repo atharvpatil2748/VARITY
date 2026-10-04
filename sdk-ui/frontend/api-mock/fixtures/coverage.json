@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0.0",
+  "coverage_id": "5f4e3d2c-1b0a-4958-8776-655443332211",
+  "workspace_id": "demo",
+  "workspace_revision": "c1d2e3f405162738495a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
+  "inspected_at": "2026-10-04T10:30:00Z",
+  "results": [
+    {
+      "requirement_id": "req_1d89bd403b85bcab97977f891a494c9788e5b7571e43a938c3b2d08c454ffbd2",
+      "status": "PARTIAL",
+      "implementation": [
+        {
+          "path": "src/duplicate_guard.py",
+          "start_line": 1,
+          "end_line": 6,
+          "excerpt": "def reject_duplicate_refund(request_id, seen):\n    if request_id in seen:\n        return \"REFUND_DUPLICATE\"\n",
+          "basis": "text_match"
+        }
+      ],
+      "tests": [],
+      "reason": "credible implementation without test support",
+      "limitations": ["no test evidence found for this requirement"]
+    },
+    {
+      "requirement_id": "req_2e9fce5147969ddc0a888c04b2a5d8879f6c6782f53b0497d3c3e19d565a0ce3",
+      "status": "UNCERTAIN",
+      "implementation": [],
+      "tests": [],
+      "reason": "no analyzable implementation or test evidence; cannot distinguish missing from hidden",
+      "limitations": []
+    }
+  ],
+  "limitations": []
+}
