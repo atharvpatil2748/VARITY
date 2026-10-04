@@ -1,0 +1,10 @@
+{
+  "name": "verity-cline-sdk-bridge",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Pinned Cline SDK bridge for native VERITY chat (contract 10). Tools call the Python VerityService only through the loopback HTTP API (contract 11).",
+  "type": "module",
+  "dependencies": {
+    "@cline/sdk": "0.0.90"
+  }
+}

@@ -15,7 +15,7 @@ mcp = ["mcp==2.3.0"]
 http = ["fastapi>=0.115", "uvicorn>=0.30"]
 
 [tool.setuptools]
-packages = ["verity", "verity.mcp", "verity.http"]
+packages = ["verity", "verity.storage", "verity.ingestion", "verity.retrieval", "verity.coverage", "verity.mcp", "verity.http"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

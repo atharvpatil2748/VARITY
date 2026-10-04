@@ -91,12 +91,6 @@ def test_real_ingest_writes_rows_and_originals(
     assert any(r.chunk.chunk_id == chunk_id for r in found)
 
 
-@pytest.mark.xfail(
-    strict=False,
-    reason="blocked by issue #10: NameError (AcceptanceCriterion not imported) "
-           "in verity/storage/sqlite.py get_requirement; Atharv one-line fix "
-           "pending. Remove this marker when the fix merges.",
-)
 def test_real_requirement_round_trip(
         pipeline: IngestionPipeline, store: SqliteKnowledgeStore) -> None:
     data = (FIXTURES / "payments.md").read_bytes()

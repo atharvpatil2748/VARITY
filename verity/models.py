@@ -834,18 +834,30 @@ class IngestRequest(VerityModel):
 class IngestResult(VerityModel):
     document: Document
     created_new_version: bool
+    schema_version: str = SCHEMA_VERSION
+
+    def validate(self) -> None:
+        _check(self.schema_version == SCHEMA_VERSION,
+               "schema_version must be 1.0.0", "schema_version")
 
 
 @dataclass(frozen=True)
 class ListPage(VerityModel):
-    """Generic list page: ``{items, total, limit, offset}`` (contract 11)."""
+    """Generic list page: ``{schema_version, items, total, limit, offset}``.
 
-    items: list
+    Wire shapes are ``ListPageDocument``/``ListPageSource`` (contract 21),
+    which require ``schema_version: "1.0.0"``.
+    """
+
+    items: list[Any]
     total: int
     limit: int
     offset: int = 0
+    schema_version: str = SCHEMA_VERSION
 
     def validate(self) -> None:
+        _check(self.schema_version == SCHEMA_VERSION,
+               "schema_version must be 1.0.0", "schema_version")
         _check(self.total >= 0, "total must be >=0", "total")
         _check(self.limit >= 1, "limit must be >=1", "limit")
         _check(self.offset >= 0, "offset must be >=0", "offset")
@@ -959,3 +971,54 @@ class Error(VerityModel):
         _check(self.code in ERROR_CODES, "code must be a v1 error code", "code")
         _nonempty(self.message, "message")
         _uuid_str(self.request_id, "request_id")
+
+
+# ---------------------------------------------------------------------------
+# Native chat models (contract 10; wire shapes in contract 21)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class ChatMessage(VerityModel):
+    role: str
+    text: str
+    citations: list[str] = field(default_factory=list)
+    created_at: str = ""
+
+    def validate(self) -> None:
+        _check(self.role in ("user", "assistant"),
+               "role must be user|assistant", "role")
+        _check(isinstance(self.text, str), "text must be a string", "text")
+        _datetime_str(self.created_at, "created_at")
+        for index, marker in enumerate(self.citations):
+            _check(
+                isinstance(marker, str) and marker.startswith("ev_"),
+                f"citations[{index}] must be an ev_ marker",
+                f"citations[{index}]",
+            )
+
+
+@dataclass(frozen=True)
+class ChatSession(VerityModel):
+    schema_version: str
+    session_id: str
+    created_at: str
+
+    def validate(self) -> None:
+        _check(self.schema_version == SCHEMA_VERSION,
+               "schema_version must be 1.0.0", "schema_version")
+        _uuid_str(self.session_id, "session_id")
+        _datetime_str(self.created_at, "created_at")
+
+
+@dataclass(frozen=True)
+class ChatResponse(VerityModel):
+    schema_version: str
+    session_id: str
+    message: ChatMessage
+    evidence: list[Evidence] = field(default_factory=list)
+
+    def validate(self) -> None:
+        _check(self.schema_version == SCHEMA_VERSION,
+               "schema_version must be 1.0.0", "schema_version")
+        _uuid_str(self.session_id, "session_id")
