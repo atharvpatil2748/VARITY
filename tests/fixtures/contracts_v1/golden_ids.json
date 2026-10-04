@@ -1,0 +1,21 @@
+{
+  "comment": "Golden ID vectors from Docs/contracts/03_VERITY_DATA_SCHEMAS.md (frozen). All values must match exactly; canonical JSON is UTF-8 with sorted keys, ensure_ascii=false, separators ',' and ':', NFC-normalized string values.",
+  "version_id": "129dcd06-1ba1-4f0c-bf7e-c678f905b624",
+  "source_id": "24da624f-7fd0-41ea-a49b-8449cbb179d9",
+  "block": {
+    "payload": {"version_id": "129dcd06-1ba1-4f0c-bf7e-c678f905b624", "ordinal": 0, "text": "Refund window"},
+    "expected": "blk_75c2eccdd286a5d1218d15d0d80f0f65356359458fd641fa25e7e9e117f6cfff"
+  },
+  "chunk": {
+    "payload": {"version_id": "129dcd06-1ba1-4f0c-bf7e-c678f905b624", "block_start": 0, "block_end": 1, "start_offset": null, "end_offset": null, "kind": "requirement", "text": "Refund requests MUST be accepted only within 30 days."},
+    "expected": "chk_71bb4eb1f7917adbd4771acd9946ee1a30994af19c4ebbf66ecd2b1e4b89b16a"
+  },
+  "requirement": {
+    "payload": {"source_id": "24da624f-7fd0-41ea-a49b-8449cbb179d9", "local_id": "REQ-001"},
+    "expected": "req_1d89bd403b85bcab97977f891a494c9788e5b7571e43a938c3b2d08c454ffbd2"
+  },
+  "evidence": {
+    "payload": {"version_id": "129dcd06-1ba1-4f0c-bf7e-c678f905b624", "chunk_id": "chk_71bb4eb1f7917adbd4771acd9946ee1a30994af19c4ebbf66ecd2b1e4b89b16a"},
+    "expected": "ev_0a9948f2aa8b8cc5e499ef43626c5847eeab8df548ba5961e38a9a1126e4dc8e"
+  }
+}

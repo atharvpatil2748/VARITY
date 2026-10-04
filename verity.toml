@@ -1,0 +1,26 @@
+# VERITY configuration template (contract 14, v1.0.0).
+# Replace model revision placeholders with locally available pinned IDs
+# before the offline event; the identifier is configuration, not a guarantee.
+
+config_version = "1.0.0"
+data_dir = "./data"
+source_root = "./documents"
+database_path = "./data/verity.sqlite3"
+embedding_model = "BAAI/bge-m3@pinned-local-revision"
+reranker_model = "BAAI/bge-reranker-v2-m3@pinned-local-revision"
+embedding_required = false
+reranker_enabled = true
+search_limit_default = 8
+search_limit_max = 20
+lexical_candidates = 50
+semantic_candidates = 50
+rerank_candidates = 30
+api_host = "127.0.0.1"
+api_port = 8765
+mcp_transport = "stdio"
+log_level = "INFO"
+
+[workspaces.demo]
+root = "./demo-workspace"
+test_command = ["python", "-m", "pytest", "-q"]
+exclude = [".git", ".venv", "node_modules", "dist"]
