@@ -1,0 +1,14 @@
+[
+ {
+  "fixture": "invalid_duplicate.md",
+  "code": "SPEC_VALIDATION_ERROR",
+  "line": 13,
+  "message_contains": "duplicate REQ identifier REQ-001"
+ },
+ {
+  "fixture": "invalid_reference.md",
+  "code": "SPEC_VALIDATION_ERROR",
+  "line": 16,
+  "message_contains": "dangling reference"
+ }
+]

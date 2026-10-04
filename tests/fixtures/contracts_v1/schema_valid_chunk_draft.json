@@ -1,0 +1,9 @@
+{
+  "kind": "requirement",
+  "text": "Refund requests MUST be accepted only within 30 days.",
+  "block_start": 0,
+  "block_end": 1,
+  "start_offset": null,
+  "end_offset": null,
+  "requirement_id": null
+}

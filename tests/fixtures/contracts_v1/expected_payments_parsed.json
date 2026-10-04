@@ -1,0 +1,444 @@
+{
+ "metadata": {
+  "metadata_version": "1.0.0",
+  "title": "Payment API Specification",
+  "source_key": "payments-api",
+  "project": "payment-service",
+  "spec_version": "1.0",
+  "language": "en",
+  "page_count": null,
+  "parser_name": "verity_spec",
+  "parser_version": "1.0.0",
+  "warnings": []
+ },
+ "blocks": [
+  {
+   "ordinal": 0,
+   "text": "Requirements",
+   "block_type": "heading",
+   "page": null,
+   "heading_path": [
+    "Requirements"
+   ],
+   "start_line": 10,
+   "end_line": 10,
+   "start_offset": null,
+   "end_offset": null
+  },
+  {
+   "ordinal": 1,
+   "text": "REQ-001: Refund window",
+   "block_type": "heading",
+   "page": null,
+   "heading_path": [
+    "Requirements",
+    "REQ-001: Refund window"
+   ],
+   "start_line": 11,
+   "end_line": 11,
+   "start_offset": null,
+   "end_offset": null
+  },
+  {
+   "ordinal": 2,
+   "text": "Refund requests MUST be accepted only within 30 days.",
+   "block_type": "paragraph",
+   "page": null,
+   "heading_path": [
+    "Requirements",
+    "REQ-001: Refund window"
+   ],
+   "start_line": 12,
+   "end_line": 12,
+   "start_offset": null,
+   "end_offset": null
+  },
+  {
+   "ordinal": 3,
+   "text": "Constraints",
+   "block_type": "heading",
+   "page": null,
+   "heading_path": [
+    "Requirements",
+    "REQ-001: Refund window",
+    "Constraints"
+   ],
+   "start_line": 14,
+   "end_line": 14,
+   "start_offset": null,
+   "end_offset": null
+  },
+  {
+   "ordinal": 4,
+   "text": "A later request MUST return REFUND_WINDOW_EXPIRED.",
+   "block_type": "paragraph",
+   "page": null,
+   "heading_path": [
+    "Requirements",
+    "REQ-001: Refund window",
+    "Constraints"
+   ],
+   "start_line": 15,
+   "end_line": 15,
+   "start_offset": null,
+   "end_offset": null
+  },
+  {
+   "ordinal": 5,
+   "text": "Edge cases",
+   "block_type": "heading",
+   "page": null,
+   "heading_path": [
+    "Requirements",
+    "REQ-001: Refund window",
+    "Edge cases"
+   ],
+   "start_line": 17,
+   "end_line": 17,
+   "start_offset": null,
+   "end_offset": null
+  },
+  {
+   "ordinal": 6,
+   "text": "A request at exactly 30 days is accepted.",
+   "block_type": "paragraph",
+   "page": null,
+   "heading_path": [
+    "Requirements",
+    "REQ-001: Refund window",
+    "Edge cases"
+   ],
+   "start_line": 18,
+   "end_line": 18,
+   "start_offset": null,
+   "end_offset": null
+  },
+  {
+   "ordinal": 7,
+   "text": "References",
+   "block_type": "heading",
+   "page": null,
+   "heading_path": [
+    "Requirements",
+    "REQ-001: Refund window",
+    "References"
+   ],
+   "start_line": 20,
+   "end_line": 20,
+   "start_offset": null,
+   "end_offset": null
+  },
+  {
+   "ordinal": 8,
+   "text": "API-001",
+   "block_type": "paragraph",
+   "page": null,
+   "heading_path": [
+    "Requirements",
+    "REQ-001: Refund window",
+    "References"
+   ],
+   "start_line": 21,
+   "end_line": 21,
+   "start_offset": null,
+   "end_offset": null
+  },
+  {
+   "ordinal": 9,
+   "text": "AC-001",
+   "block_type": "paragraph",
+   "page": null,
+   "heading_path": [
+    "Requirements",
+    "REQ-001: Refund window",
+    "References"
+   ],
+   "start_line": 22,
+   "end_line": 22,
+   "start_offset": null,
+   "end_offset": null
+  },
+  {
+   "ordinal": 10,
+   "text": "REQ-002: Partial refund",
+   "block_type": "heading",
+   "page": null,
+   "heading_path": [
+    "Requirements",
+    "REQ-002: Partial refund"
+   ],
+   "start_line": 24,
+   "end_line": 24,
+   "start_offset": null,
+   "end_offset": null
+  },
+  {
+   "ordinal": 11,
+   "text": "The API MUST support partial refunds.",
+   "block_type": "paragraph",
+   "page": null,
+   "heading_path": [
+    "Requirements",
+    "REQ-002: Partial refund"
+   ],
+   "start_line": 25,
+   "end_line": 25,
+   "start_offset": null,
+   "end_offset": null
+  },
+  {
+   "ordinal": 12,
+   "text": "References",
+   "block_type": "heading",
+   "page": null,
+   "heading_path": [
+    "Requirements",
+    "REQ-002: Partial refund",
+    "References"
+   ],
+   "start_line": 27,
+   "end_line": 27,
+   "start_offset": null,
+   "end_offset": null
+  },
+  {
+   "ordinal": 13,
+   "text": "API-001",
+   "block_type": "paragraph",
+   "page": null,
+   "heading_path": [
+    "Requirements",
+    "REQ-002: Partial refund",
+    "References"
+   ],
+   "start_line": 28,
+   "end_line": 28,
+   "start_offset": null,
+   "end_offset": null
+  },
+  {
+   "ordinal": 14,
+   "text": "REQ-003: Idempotent refunds",
+   "block_type": "heading",
+   "page": null,
+   "heading_path": [
+    "Requirements",
+    "REQ-003: Idempotent refunds"
+   ],
+   "start_line": 30,
+   "end_line": 30,
+   "start_offset": null,
+   "end_offset": null
+  },
+  {
+   "ordinal": 15,
+   "text": "Retrying a refund with the same idempotency_key MUST return the original result.",
+   "block_type": "paragraph",
+   "page": null,
+   "heading_path": [
+    "Requirements",
+    "REQ-003: Idempotent refunds"
+   ],
+   "start_line": 31,
+   "end_line": 31,
+   "start_offset": null,
+   "end_offset": null
+  },
+  {
+   "ordinal": 16,
+   "text": "API definitions",
+   "block_type": "heading",
+   "page": null,
+   "heading_path": [
+    "API definitions"
+   ],
+   "start_line": 33,
+   "end_line": 33,
+   "start_offset": null,
+   "end_offset": null
+  },
+  {
+   "ordinal": 17,
+   "text": "API-001: POST /refunds",
+   "block_type": "heading",
+   "page": null,
+   "heading_path": [
+    "API definitions",
+    "API-001: POST /refunds"
+   ],
+   "start_line": 34,
+   "end_line": 34,
+   "start_offset": null,
+   "end_offset": null
+  },
+  {
+   "ordinal": 18,
+   "text": "Request fields are payment_id, amount and idempotency_key.",
+   "block_type": "paragraph",
+   "page": null,
+   "heading_path": [
+    "API definitions",
+    "API-001: POST /refunds"
+   ],
+   "start_line": 35,
+   "end_line": 35,
+   "start_offset": null,
+   "end_offset": null
+  },
+  {
+   "ordinal": 19,
+   "text": "Acceptance criteria",
+   "block_type": "heading",
+   "page": null,
+   "heading_path": [
+    "Acceptance criteria"
+   ],
+   "start_line": 37,
+   "end_line": 37,
+   "start_offset": null,
+   "end_offset": null
+  },
+  {
+   "ordinal": 20,
+   "text": "AC-001: Late refund",
+   "block_type": "heading",
+   "page": null,
+   "heading_path": [
+    "Acceptance criteria",
+    "AC-001: Late refund"
+   ],
+   "start_line": 38,
+   "end_line": 38,
+   "start_offset": null,
+   "end_offset": null
+  },
+  {
+   "ordinal": 21,
+   "text": "A payment older than 30 days returns REFUND_WINDOW_EXPIRED.",
+   "block_type": "paragraph",
+   "page": null,
+   "heading_path": [
+    "Acceptance criteria",
+    "AC-001: Late refund"
+   ],
+   "start_line": 39,
+   "end_line": 39,
+   "start_offset": null,
+   "end_offset": null
+  },
+  {
+   "ordinal": 22,
+   "text": "References: REQ-001",
+   "block_type": "paragraph",
+   "page": null,
+   "heading_path": [
+    "Acceptance criteria",
+    "AC-001: Late refund"
+   ],
+   "start_line": 40,
+   "end_line": 40,
+   "start_offset": null,
+   "end_offset": null
+  },
+  {
+   "ordinal": 23,
+   "text": "References",
+   "block_type": "heading",
+   "page": null,
+   "heading_path": [
+    "References"
+   ],
+   "start_line": 42,
+   "end_line": 42,
+   "start_offset": null,
+   "end_offset": null
+  },
+  {
+   "ordinal": 24,
+   "text": "- Internal payments architecture, section 4.2.",
+   "block_type": "paragraph",
+   "page": null,
+   "heading_path": [
+    "References"
+   ],
+   "start_line": 43,
+   "end_line": 43,
+   "start_offset": null,
+   "end_offset": null
+  }
+ ],
+ "media_type": "text/markdown",
+ "kind": "spec",
+ "spec_requirements": [
+  {
+   "local_id": "REQ-001",
+   "title": "Refund window",
+   "text": "Refund requests MUST be accepted only within 30 days.",
+   "constraints": [
+    "A later request MUST return REFUND_WINDOW_EXPIRED."
+   ],
+   "edge_cases": [
+    "A request at exactly 30 days is accepted."
+   ],
+   "api_refs": [
+    "API-001"
+   ],
+   "reference_ids": [
+    "AC-001"
+   ],
+   "acceptance_local_ids": [
+    "AC-001"
+   ],
+   "block_start": 1,
+   "block_end": 9
+  },
+  {
+   "local_id": "REQ-002",
+   "title": "Partial refund",
+   "text": "The API MUST support partial refunds.",
+   "constraints": [],
+   "edge_cases": [],
+   "api_refs": [
+    "API-001"
+   ],
+   "reference_ids": [],
+   "acceptance_local_ids": [],
+   "block_start": 10,
+   "block_end": 13
+  },
+  {
+   "local_id": "REQ-003",
+   "title": "Idempotent refunds",
+   "text": "Retrying a refund with the same idempotency_key MUST return the original result.",
+   "constraints": [],
+   "edge_cases": [],
+   "api_refs": [],
+   "reference_ids": [],
+   "acceptance_local_ids": [],
+   "block_start": 14,
+   "block_end": 15
+  }
+ ],
+ "spec_entities": [
+  {
+   "kind": "api_definition",
+   "local_id": "API-001",
+   "title": "POST /refunds",
+   "text": "Request fields are payment_id, amount and idempotency_key.",
+   "reference_ids": [],
+   "block_start": 17,
+   "block_end": 18
+  },
+  {
+   "kind": "acceptance_criterion",
+   "local_id": "AC-001",
+   "title": "Late refund",
+   "text": "A payment older than 30 days returns REFUND_WINDOW_EXPIRED.",
+   "reference_ids": [
+    "REQ-001"
+   ],
+   "block_start": 20,
+   "block_end": 22
+  }
+ ]
+}

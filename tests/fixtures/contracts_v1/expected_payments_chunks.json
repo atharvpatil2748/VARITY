@@ -1,0 +1,83 @@
+[
+ {
+  "kind": "general_chunk",
+  "text": "Requirements",
+  "block_start": 0,
+  "block_end": 0,
+  "start_offset": null,
+  "end_offset": null,
+  "requirement_id": null
+ },
+ {
+  "kind": "requirement",
+  "text": "Refund window\nRefund requests MUST be accepted only within 30 days.\nConstraints:\n- A later request MUST return REFUND_WINDOW_EXPIRED.\nEdge cases:\n- A request at exactly 30 days is accepted.",
+  "block_start": 1,
+  "block_end": 9,
+  "start_offset": null,
+  "end_offset": null,
+  "requirement_id": null
+ },
+ {
+  "kind": "requirement",
+  "text": "Partial refund\nThe API MUST support partial refunds.",
+  "block_start": 10,
+  "block_end": 13,
+  "start_offset": null,
+  "end_offset": null,
+  "requirement_id": null
+ },
+ {
+  "kind": "requirement",
+  "text": "Idempotent refunds\nRetrying a refund with the same idempotency_key MUST return the original result.",
+  "block_start": 14,
+  "block_end": 15,
+  "start_offset": null,
+  "end_offset": null,
+  "requirement_id": null
+ },
+ {
+  "kind": "general_chunk",
+  "text": "API definitions",
+  "block_start": 16,
+  "block_end": 16,
+  "start_offset": null,
+  "end_offset": null,
+  "requirement_id": null
+ },
+ {
+  "kind": "api_definition",
+  "text": "POST /refunds\nRequest fields are payment_id, amount and idempotency_key.",
+  "block_start": 17,
+  "block_end": 18,
+  "start_offset": null,
+  "end_offset": null,
+  "requirement_id": null
+ },
+ {
+  "kind": "general_chunk",
+  "text": "Acceptance criteria",
+  "block_start": 19,
+  "block_end": 19,
+  "start_offset": null,
+  "end_offset": null,
+  "requirement_id": null
+ },
+ {
+  "kind": "acceptance_criterion",
+  "text": "Late refund\nA payment older than 30 days returns REFUND_WINDOW_EXPIRED.",
+  "block_start": 20,
+  "block_end": 22,
+  "start_offset": null,
+  "end_offset": null,
+  "requirement_id": null
+ },
+ {
+  "kind": "general_chunk",
+  "text": "References\n- Internal payments architecture, section 4.2.",
+  "block_start": 23,
+  "block_end": 24,
+  "start_offset": null,
+  "end_offset": null,
+  "requirement_id": null
+ }
+]

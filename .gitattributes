@@ -1,0 +1,3 @@
+# PDF fixtures are binary (hand-built minimal PDFs with byte-exact xref
+# tables); never apply CRLF conversion to them.
+*.pdf binary
