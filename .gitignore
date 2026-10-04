@@ -7,6 +7,7 @@ data/
 *.sqlite3
 *.db
 *.egg-info/
+documents/
 demo-workspace/src/
 demo-workspace/tests/
 node_modules/
