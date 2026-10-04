@@ -17,8 +17,10 @@ from .parsers import (
     ParserRouter,
     PdfParser,
     TextParser,
+    media_type_for,
     resolve_kind,
 )
+from .pipeline import IngestionPipeline
 from .spec import SpecParser, looks_like_spec
 
 __all__ = [
@@ -28,6 +30,7 @@ __all__ = [
     "CodeParser",
     "GeneralChunker",
     "IngestionCoordinator",
+    "IngestionPipeline",
     "MarkdownParser",
     "Materializer",
     "Parser",
@@ -36,5 +39,6 @@ __all__ = [
     "SpecParser",
     "TextParser",
     "looks_like_spec",
+    "media_type_for",
     "resolve_kind",
 ]

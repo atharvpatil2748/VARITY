@@ -463,6 +463,18 @@ class ParserRouter:
         self._spec = SpecParser()
 
     def parse(self, data: bytes, filename: str, media_type: str) -> dict:
+        return self.parse_for_mode(data, filename, media_type, "auto")
+
+    def parse_for_mode(self, data: bytes, filename: str, media_type: str,
+                       mode: str) -> dict:
+        """``mode`` is ``auto``/``spec``/``general`` (IngestRequest.mode).
+
+        ``auto`` treats Markdown with ``verity_spec`` front matter as spec and
+        other supported files as general; malformed front matter that begins
+        ``verity_spec`` is a spec error, never silently general. ``spec`` forces
+        the strict spec parser (contract 04); ``general`` forces general
+        ingestion.
+        """
         kind = resolve_kind(media_type, filename)
         if kind is None:
             raise VerityError(
@@ -471,10 +483,16 @@ class ParserRouter:
                 f"file={filename!r}",
                 {"file": filename, "media_type": media_type},
             )
+        if mode == "spec":
+            if kind != "markdown":
+                raise VerityError(
+                    "SPEC_VALIDATION_ERROR",
+                    "spec documents must be Markdown (contract 04)",
+                    {"file": filename},
+                )
+            return self._spec.parse(data, filename, media_type)
         if kind == "markdown":
-            if looks_like_spec(data):
-                # Contract 05: malformed front matter beginning verity_spec is
-                # a spec error, never silently general.
+            if mode == "auto" and looks_like_spec(data):
                 return self._spec.parse(data, filename, media_type)
             return self._markdown.parse(data, filename, media_type)
         if kind == "text":
@@ -507,3 +525,17 @@ def resolve_kind(media_type: str, filename: str) -> str | None:
     if ext in _PDF_EXTENSIONS:
         return "pdf"
     return None
+
+
+def media_type_for(filename: str) -> str:
+    """Canonical media type for a supported filename extension (else empty)."""
+    ext = os.path.splitext(filename or "")[1].lower()
+    if ext in _MD_EXTENSIONS:
+        return "text/markdown"
+    if ext in _TXT_EXTENSIONS:
+        return "text/plain"
+    if ext in _PDF_EXTENSIONS:
+        return "application/pdf"
+    if ext in _CODE_EXTENSIONS:
+        return "text/x-code"
+    return ""
