@@ -18,6 +18,7 @@ tests/fixtures/v1 (which the suite validates against contract 21).
 from __future__ import annotations
 
 import copy
+import hashlib
 import re
 from typing import Any
 
@@ -35,7 +36,28 @@ REQUIRED_FIXTURES = (
     "requirement",
     "evidence_lookup",
     "coverage_result",
+    "document",
+    "source",
+    "ingest_result",
+    "list_page_documents",
+    "list_page_sources",
 )
+
+_UUID4_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+)
+#: Supported MVP media types (contract 05): pdf, markdown, txt, code extensions.
+_EXTENSION_MEDIA = {
+    ".pdf": "application/pdf",
+    ".md": "text/markdown",
+    ".txt": "text/plain",
+    ".py": "text/x-code",
+    ".js": "text/x-code",
+    ".ts": "text/x-code",
+    ".tsx": "text/x-code",
+    ".java": "text/x-code",
+}
+MAX_UPLOAD_BYTES = 25 * 1024 * 1024
 
 
 def _as_dict(request: Any) -> Any:
@@ -60,6 +82,7 @@ class FakeVerityService:
             raise ValueError(f"FakeVerityService: missing fixtures: {missing}")
         self._fixtures = fixtures
         self._no_match_query = no_match_query
+        self._ingested: set[str] = set()
         self.call_counts: dict[str, int] = {name: 0 for name in REQUIRED_FIXTURES}
 
     @staticmethod
@@ -168,3 +191,137 @@ class FakeVerityService:
         result = copy.deepcopy(fixture)
         result["results"] = [by_id[i] for i in ids]  # preserve request order (contract 12)
         return result
+
+    # ------------------------------------------------- V6/V7 contract-16 surface
+
+    async def ingest(self, request: Any, data: bytes) -> dict[str, Any]:
+        self.call_counts["ingest_result"] += 1
+        request = _as_dict(request)
+        self._require(isinstance(request, dict), "INVALID_REQUEST", "ingest request must be an object")
+        self._require(isinstance(data, bytes), "INVALID_REQUEST", "upload data must be bytes")
+        source_path = request.get("source_path")
+        self._require(
+            isinstance(source_path, str) and source_path != "" and ".." not in source_path.split("/"),
+            "INVALID_REQUEST",
+            "source_path must be a safe relative path",
+            {"field": "source_path"},
+        )
+        mode = request.get("mode", "auto")
+        self._require(
+            mode in ("auto", "spec", "general"),
+            "INVALID_REQUEST",
+            "mode must be auto, spec or general",
+            {"field": "mode"},
+        )
+        source_id = request.get("source_id")
+        self._require(
+            source_id is None or (isinstance(source_id, str) and bool(_UUID4_RE.match(source_id))),
+            "INVALID_REQUEST",
+            "source_id must be a UUIDv4 or null",
+            {"field": "source_id"},
+        )
+        self._require(
+            len(data) <= MAX_UPLOAD_BYTES,
+            "LIMIT_EXCEEDED",
+            "upload exceeds the 25 MiB limit",
+            {"size_bytes": len(data)},
+        )
+        extension = "." + source_path.rsplit(".", 1)[-1].lower() if "." in source_path else ""
+        self._require(
+            extension in _EXTENSION_MEDIA,
+            "UNSUPPORTED_FORMAT",
+            "file media/extension is not supported in v1",
+            {"field": "source_path"},
+        )
+        content_sha = hashlib.sha256(data).hexdigest()
+        created_new_version = content_sha not in self._ingested
+        self._ingested.add(content_sha)
+        result = copy.deepcopy(self._fixtures["ingest_result"])
+        result["created_new_version"] = created_new_version
+        return result
+
+    async def get_document(self, document_id: str) -> dict[str, Any]:
+        self.call_counts["document"] += 1
+        self._require(
+            isinstance(document_id, str) and bool(_UUID4_RE.match(document_id)),
+            "INVALID_REQUEST",
+            "document_id must be a UUIDv4",
+            {"field": "document_id"},
+        )
+        document = self._fixtures["document"]
+        if document_id != document["document_id"]:
+            raise VerityError(
+                "DOCUMENT_NOT_FOUND",
+                "No document matches the given document ID.",
+                {"field": "document_id"},
+            )
+        return copy.deepcopy(document)
+
+    async def list_documents(self, limit: int, offset: int, kind: Any) -> dict[str, Any]:
+        self.call_counts["list_page_documents"] += 1
+        self._require(
+            isinstance(limit, int) and not isinstance(limit, bool) and 1 <= limit <= 100,
+            "INVALID_REQUEST",
+            "limit must be an integer 1-100",
+            {"field": "limit"},
+        )
+        self._require(
+            isinstance(offset, int) and not isinstance(offset, bool) and offset >= 0,
+            "INVALID_REQUEST",
+            "offset must be an integer >= 0",
+            {"field": "offset"},
+        )
+        self._require(
+            kind is None or kind in ("spec", "general"),
+            "INVALID_REQUEST",
+            "kind must be spec or general",
+            {"field": "kind"},
+        )
+        document = self._fixtures["document"]
+        items = [copy.deepcopy(document)] if kind in (None, document["kind"]) else []
+        return {
+            "schema_version": "1.0.0",
+            "items": items,
+            "limit": limit,
+            "offset": offset,
+            "total": len(items),
+        }
+
+    async def list_sources(self, limit: int, offset: int) -> dict[str, Any]:
+        self.call_counts["list_page_sources"] += 1
+        self._require(
+            isinstance(limit, int) and not isinstance(limit, bool) and 1 <= limit <= 100,
+            "INVALID_REQUEST",
+            "limit must be an integer 1-100",
+            {"field": "limit"},
+        )
+        self._require(
+            isinstance(offset, int) and not isinstance(offset, bool) and offset >= 0,
+            "INVALID_REQUEST",
+            "offset must be an integer >= 0",
+            {"field": "offset"},
+        )
+        return {
+            "schema_version": "1.0.0",
+            "items": [copy.deepcopy(self._fixtures["source"])],
+            "limit": limit,
+            "offset": offset,
+            "total": 1,
+        }
+
+    async def get_coverage(self, coverage_id: str) -> dict[str, Any]:
+        self.call_counts["coverage_result"] += 1
+        self._require(
+            isinstance(coverage_id, str) and bool(_UUID4_RE.match(coverage_id)),
+            "INVALID_REQUEST",
+            "coverage_id must be a UUIDv4",
+            {"field": "coverage_id"},
+        )
+        fixture = self._fixtures["coverage_result"]
+        if coverage_id != fixture["coverage_id"]:
+            raise VerityError(
+                "COVERAGE_NOT_FOUND",
+                "No stored coverage run matches the given coverage ID.",
+                {"field": "coverage_id"},
+            )
+        return copy.deepcopy(fixture)

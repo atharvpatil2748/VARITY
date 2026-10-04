@@ -33,6 +33,13 @@ FIXTURE_DEF_MAP: dict[str, str] = {
     "evidence_lookup": "EvidenceLookup",
     "coverage_result": "CoverageResult",
     "error_requirement_not_found": "Error",
+    "document": "Document",
+    "source": "Source",
+    "ingest_result": "IngestResult",
+    "list_page_documents": "ListPageDocument",
+    "list_page_sources": "ListPageSource",
+    "chat_session": "ChatSession",
+    "chat_response": "ChatResponse",
 }
 
 

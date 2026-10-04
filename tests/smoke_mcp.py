@@ -49,9 +49,13 @@ def check(label: str, ok: bool, detail: str = "") -> None:
 
 
 def load_fixtures() -> dict:
+    from conftest import FIXTURE_DEF_MAP
+
     fixture_dir = TESTS / "fixtures" / "v1"
-    stems = ("search_result", "search_result_empty", "requirement", "evidence_lookup", "coverage_result")
-    return {stem: json.loads((fixture_dir / f"{stem}.json").read_text(encoding="utf-8")) for stem in stems}
+    return {
+        stem: json.loads((fixture_dir / f"{stem}.json").read_text(encoding="utf-8"))
+        for stem in FIXTURE_DEF_MAP
+    }
 
 
 def parity(result) -> bool:
