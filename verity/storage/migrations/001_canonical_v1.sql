@@ -1,0 +1,3 @@
+-- Migration 001: canonical v1 schema (contract 13).
+-- Applied by storage.sqlite.open_store inside one transaction.
+-- Skeleton for Phase 11; authoritative DDL lives in contract 13.
