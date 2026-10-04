@@ -1,0 +1,12 @@
+{
+  "local_id": "REQ-001",
+  "title": "Refund window",
+  "text": "Refund requests MUST be accepted only within 30 days.",
+  "constraints": ["A later request MUST return REFUND_WINDOW_EXPIRED."],
+  "edge_cases": ["A request at exactly 30 days is accepted."],
+  "api_refs": ["API-001"],
+  "reference_ids": ["API-001", "AC-001"],
+  "acceptance_local_ids": ["AC-001"],
+  "block_start": 0,
+  "block_end": 6
+}

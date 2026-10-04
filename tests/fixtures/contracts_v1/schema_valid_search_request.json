@@ -1,0 +1,8 @@
+{
+  "query": "refund window",
+  "document_ids": null,
+  "document_kinds": ["spec", "general"],
+  "chunk_kinds": null,
+  "limit": 8,
+  "per_document_limit": 2
+}

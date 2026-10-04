@@ -1,0 +1,8 @@
+Security guidance for the payments platform.
+
+Idempotency keys must be generated server-side and never reused across
+different refund requests. Treat the idempotency_key request field as
+sensitive operational data and do not write it to application logs.
+
+Rotate service credentials every 90 days. Refund webhooks must verify
+signatures before any state change.

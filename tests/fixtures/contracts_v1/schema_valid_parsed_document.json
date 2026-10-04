@@ -1,0 +1,31 @@
+{
+  "metadata": {
+    "metadata_version": "1.0.0",
+    "title": "Payment API Specification",
+    "source_key": "payments-api",
+    "project": "payment-service",
+    "spec_version": "1.0",
+    "language": "en",
+    "page_count": null,
+    "parser_name": "verity_spec",
+    "parser_version": "1.0.0",
+    "warnings": []
+  },
+  "blocks": [
+    {
+      "ordinal": 0,
+      "text": "Requirements",
+      "block_type": "heading",
+      "page": null,
+      "heading_path": ["Requirements"],
+      "start_line": 10,
+      "end_line": 10,
+      "start_offset": null,
+      "end_offset": null
+    }
+  ],
+  "media_type": "text/markdown",
+  "kind": "spec",
+  "spec_requirements": [],
+  "spec_entities": []
+}

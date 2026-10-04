@@ -1,0 +1,9 @@
+{
+  "kind": "acceptance_criterion",
+  "local_id": "AC-001",
+  "title": "Late refund",
+  "text": "A payment older than 30 days returns REFUND_WINDOW_EXPIRED.",
+  "reference_ids": ["API-001"],
+  "block_start": 20,
+  "block_end": 22
+}
