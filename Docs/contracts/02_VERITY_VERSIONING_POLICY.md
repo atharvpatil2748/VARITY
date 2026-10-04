@@ -1,6 +1,6 @@
 # Versioning and change control
 
-**Owner:** Atharv. **Consumers:** all four owners. **Documentation revision:** 1.0.1; public wire contract versions remain 1.0.0.
+**Owner:** Atharv. **Consumers:** all four owners. **Documentation revision:** 1.0.2; public wire contract versions remain 1.0.0.
 
 All public/persisted contracts use semantic `MAJOR.MINOR.PATCH`. The initial package, model, metadata, spec format, MCP and config wire versions are `1.0.0`; package documentation has a non-wire patch revision `1.0.1`. HTTP uses `/api/v1` plus response field `contract_version: "1.0.0"`. SQLite uses integer `user_version=1` because SQLite migrations are sequential; migration 1 implements data schema 1.0.0. Every persisted canonical record has `schema_version: "1.0.0"` (explicit column for primary records, or inherited from a parent with an explicit version for derived rows). Every metadata JSON has `metadata_version: "1.0.0"`.
 
@@ -26,3 +26,4 @@ For the eight-hour sprint, one short team acknowledgement is enough. Private imp
 |---|---|---|
 | 2026-10-04 | 1.0.0 | Initial pre-implementation freeze; supersedes proposed interface details in `ARCHITECTURE.md`. |
 | 2026-10-04 | 1.0.1 documentation patch | User-directed clarification: Cline SDK runs the native VERITY chat agent; MCP serves external Cline clients. Updated `10` and linked planning/architecture prose. SDK/MCP tools, HTTP routes, canonical objects and schema version stay 1.0.0. Atharv owns the amendment; Vandit and Vanashree are affected consumers and must review before implementation. |
+| 2026-10-04 | 1.0.2 documentation patch | **D1 resolved (issue #2).** Editorial: aligned `06`'s `RetrievalService.search` return type to `RetrievalRun` per `16` (owner document for callable signatures) and `03`'s required `SearchResult` retrieval mode/omissions provenance. Search semantics, budgets, RRF, filters and wire schemas unchanged; no `21` change. Classification: editorial/patch. Proposed by Piyush (issue #2, roadmap 06 D1 row); approved by Atharv (contract package owner) as team acknowledgement for the sprint; Vandit and Vanashree notified as fixture consumers. Affected owners pull once: Piyush (P9/PR-P3 unblocked), Atharv (A6/PR-A3 retrieval seam unblocked; D3 still gates historical origin). |
