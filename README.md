@@ -161,6 +161,10 @@ python -m pytest tests/test_v10_external_client.py -q -s
 ## HTTP API (loopback, contract 11)
 
 ```bash
+# one command: seeds demo data, serves the API + UI on http://localhost:8765
+python serve.py
+
+# or, against your own ./data store and verity.toml:
 python -c "from verity.service import build_service; from verity.http.app import serve; serve(build_service())"
 # → uvicorn on 127.0.0.1:8765 per verity.toml (api_host / api_port)
 ```
@@ -184,16 +188,20 @@ body with typed contract-17 codes.
 
 ## Web UI (`sdk-ui/frontend`)
 
-A dependency-free static frontend. Open `sdk-ui/frontend/index.html` in a browser:
+Start the one-command launcher, then open the browser:
 
-- **Mock mode (default)**: typed in-memory fixtures — works fully offline, no backend
-- **Real mode**: append `?api=real` — views call the live `/api/v1` API at
-  `http://127.0.0.1:8765/api/v1` (start the HTTP server above first)
+```bash
+python serve.py
+# → http://localhost:8765            (mock UI — works offline, no backend state)
+# → http://localhost:8765/?api=real  (live UI against the real /api/v1 backend)
+```
 
-Views: documents/sources browser, upload/ingest, search with evidence cards, coverage
-dashboard, and native chat. Real-mode chat additionally requires the SDK gateway wired into
-the app (`create_app(service, gateway=SdkChatGateway(service))`) and the Node bridge below —
-otherwise the API answers honestly with `SDK_UNAVAILABLE`.
+Alternatively open `sdk-ui/frontend/index.html` directly (static, dependency-free). Views:
+documents/sources browser, upload/ingest, search with evidence cards, coverage dashboard and
+native chat. Real-mode chat additionally requires the SDK gateway wired into the app
+(`create_app(service, gateway=SdkChatGateway(service))`) and the Node bridge below — otherwise
+the API answers honestly with `SDK_UNAVAILABLE` (the launcher's UI ships with
+`sdk_available: false` until you wire it).
 
 ## Native SDK chat bridge (contract 10)
 
