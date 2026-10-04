@@ -98,6 +98,25 @@ class WorkspaceScanner:
     async def snapshot(self, workspace_id: str) -> WorkspaceSnapshot:
         raise NotImplementedError
 
+    async def read_lines(
+        self,
+        snapshot: WorkspaceSnapshot,
+        relative_path: str,
+        start_line: int,
+        end_line: int,
+    ) -> str:
+        """Scanner-owned bounded text read (D2, contract 16 change log 1.0.4).
+
+        Frozen rules: only this method and ``snapshot`` perform workspace
+        I/O; ``relative_path`` must be an exact ``snapshot.files`` member;
+        ``1 <= start_line <= end_line``; each call is capped at 200 lines
+        and 8,000 characters (``LIMIT_EXCEEDED`` beyond); the file's
+        ``content_sha256`` is verified against the manifest first and a
+        mismatch raises ``COVERAGE_UNAVAILABLE`` (treated as
+        ``workspace_changed`` -> ``UNCERTAIN`` by the coverage service).
+        """
+        raise NotImplementedError
+
 
 class FakeSnapshotScanner(WorkspaceScanner):
     """N1 fake: snapshots an explicit manifest, no filesystem walking.
@@ -142,6 +161,10 @@ class FakeSnapshotScanner(WorkspaceScanner):
             workspace_id=workspace_id, root=root, revision=revision, files=files
         )
 
+
+#: Contract-12 read caps frozen by the D2 amendment (contract 16, 1.0.4).
+MAX_READ_LINES = 200
+MAX_READ_CHARS = 8000
 
 #: Extensions never indexed as text (contract 12: ignore binaries).
 _BINARY_EXTENSIONS = frozenset({
@@ -239,6 +262,55 @@ class RealWorkspaceScanner(WorkspaceScanner):
             revision=manifest_revision(manifest),
             files=manifest,
         )
+
+    async def read_lines(
+        self,
+        snapshot: WorkspaceSnapshot,
+        relative_path: str,
+        start_line: int,
+        end_line: int,
+    ) -> str:
+        """Contract-16 D2 (1.0.4) bounded scanner-owned read; see protocol."""
+        members = {f.relative_path: f for f in snapshot.files}
+        entry = members.get(relative_path)
+        if entry is None:
+            raise VerityError(
+                "INVALID_REQUEST",
+                "relative_path is not a member of the snapshot manifest",
+                {"relative_path": relative_path},
+            )
+        if start_line < 1 or end_line < 1 or start_line > end_line:
+            raise VerityError(
+                "INVALID_REQUEST",
+                "require 1 <= start_line <= end_line",
+                {"start_line": start_line, "end_line": end_line},
+            )
+        if end_line - start_line + 1 > MAX_READ_LINES:
+            raise VerityError(
+                "LIMIT_EXCEEDED",
+                f"read exceeds {MAX_READ_LINES} lines (contract 16, 1.0.4)",
+                {"start_line": start_line, "end_line": end_line},
+            )
+        path = snapshot.root / relative_path
+        data = path.read_bytes()
+        digest = hashlib.sha256(data).hexdigest()
+        if digest != entry.content_sha256:
+            # File changed since the snapshot was taken: never return
+            # stale text as if it matched the manifest (D2 rule 4).
+            raise VerityError(
+                "COVERAGE_UNAVAILABLE",
+                "workspace file changed since the snapshot was taken",
+                {"relative_path": relative_path},
+            )
+        lines = data.decode("utf-8", errors="replace").splitlines(keepends=True)
+        text = "".join(lines[start_line - 1:end_line])
+        if len(text) > MAX_READ_CHARS:
+            raise VerityError(
+                "LIMIT_EXCEEDED",
+                f"read exceeds {MAX_READ_CHARS} characters (contract 16, 1.0.4)",
+                {"start_line": start_line, "end_line": end_line},
+            )
+        return text
 
     def _safe_root(self, workspace: WorkspaceConfig) -> Path:
         configured = workspace.root

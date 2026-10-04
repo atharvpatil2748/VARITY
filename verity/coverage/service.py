@@ -9,9 +9,10 @@ never a confident verdict.
 
 from __future__ import annotations
 
+import time
 from datetime import datetime, timezone
-from typing import Awaitable, Callable, Mapping
-from uuid import uuid4
+from typing import Awaitable, Callable, Mapping, Protocol
+from uuid import UUID, uuid4
 
 from ..errors import VerityError
 from ..models import (
@@ -20,14 +21,33 @@ from ..models import (
     CoverageStatus,
     Requirement,
     RequirementCoverage,
+    TestEvidence,
+    TestOutcome,
 )
 from .candidates import CodeEvidenceRetriever
 from .evaluator import RequirementEvaluator
-from .workspace import WorkspaceScanner, manifest_revision
+from .workspace import WorkspaceScanner, WorkspaceSnapshot
+
+#: Contract 12: total coverage deadline is 30 seconds; reserve 3s slack.
+COVERAGE_DEADLINE_SECONDS = 30.0
+_DEADLINE_BUDGET = COVERAGE_DEADLINE_SECONDS - 3.0
 
 
 def _now_utc() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+class _CoverageStore(Protocol):
+    """The store surface coverage needs (contract 16 KnowledgeStore)."""
+
+    async def get_requirement(self, requirement_id: str) -> Requirement | None: ...
+    async def save_coverage(self, result: CoverageResult) -> None: ...
+
+
+class TestRunner(Protocol):
+    """N5 surface: allowlisted run returning mapped test outcomes."""
+
+    async def run(self, snapshot: WorkspaceSnapshot) -> tuple[TestEvidence, ...]: ...
 
 
 class CoverageService:
@@ -38,10 +58,13 @@ class CoverageService:
 
 
 class DefaultCoverageService(CoverageService):
-    """N1 orchestration over injected scanner/retriever/evaluator.
+    """N6 orchestration over scanner/retriever/evaluator/store (contract 12).
 
-    ``requirement_lookup`` is an async callable ``requirement_id ->
-    Requirement``; the real store-backed lookup arrives with N6 (PR-A2).
+    ``requirement_lookup`` resolves requirement IDs (typically the real
+    ``KnowledgeStore.get_requirement``); when ``store`` is provided the
+    immutable ``CoverageResult`` is persisted exactly once per run
+    (contract 16). ``test_runner`` runs only the allowlisted command
+    (N5); its outcomes are merged into retrieved test evidence by path.
     """
 
     def __init__(
@@ -50,38 +73,83 @@ class DefaultCoverageService(CoverageService):
         retriever: CodeEvidenceRetriever,
         evaluator: RequirementEvaluator,
         requirement_lookup: Callable[[str], Awaitable[Requirement]],
+        store: _CoverageStore | None = None,
+        test_runner: TestRunner | None = None,
     ) -> None:
         self._scanner = scanner
         self._retriever = retriever
         self._evaluator = evaluator
         self._lookup = requirement_lookup
+        self._store = store
+        self._test_runner = test_runner
 
     async def check(self, request: CoverageRequest) -> CoverageResult:
         if request.requirement_ids is None:
             raise VerityError(
                 "INVALID_REQUEST",
-                "requirement_ids=null (all requirements) requires the real "
-                "store and is scheduled for N6",
+                "requirement_ids=null (all requirements) needs a store "
+                "listing capability not in the contract-16 KnowledgeStore; "
+                "pass explicit IDs (1-50)",
                 {"field": "requirement_ids"},
             )
-        ids = list(dict.fromkeys(request.requirement_ids))  # unique, order kept
-        if len(ids) > 50:
+        ids = list(request.requirement_ids)
+        if len(ids) != len(set(ids)):
             raise VerityError(
                 "INVALID_REQUEST",
-                "at most 50 requirement_ids per coverage request (contract 12)",
+                "requirement_ids must be unique (contract 12)",
+                {"field": "requirement_ids"},
+            )
+        if not 1 <= len(ids) <= 50:
+            raise VerityError(
+                "INVALID_REQUEST",
+                "requirement_ids must contain 1-50 IDs (contract 12)",
                 {"count": len(ids)},
             )
 
+        started = time.monotonic()
         snapshot = await self._scanner.snapshot(request.workspace_id)
+        limitations: list[str] = []
+        executed: tuple[TestEvidence, ...] = ()
+        if request.run_tests and self._test_runner is not None:
+            try:
+                executed = await self._test_runner.run(snapshot)
+            except VerityError as exc:
+                if exc.code == "TIMEOUT":
+                    raise
+                limitations.append(f"test runner unavailable: {exc.message}")
+
         results: list[RequirementCoverage] = []
         for requirement_id in ids:
+            if time.monotonic() - started > _DEADLINE_BUDGET:
+                results.append(RequirementCoverage(
+                    requirement_id=requirement_id,
+                    status=CoverageStatus.UNCERTAIN,
+                    reason="coverage deadline exceeded before evaluation",
+                    limitations=["coverage deadline exceeded"],
+                ))
+                limitations.append("coverage deadline exceeded")
+                continue
             requirement = await self._lookup(requirement_id)
-            code, tests = await self._retriever.find(requirement, snapshot)
-            results.append(
-                self._evaluator.evaluate(requirement, code, tests, request.run_tests)
-            )
+            try:
+                code, tests = await self._retriever.find(requirement, snapshot)
+                tests = self._merge_outcomes(tests, executed)
+                results.append(
+                    self._evaluator.evaluate(
+                        requirement, code, tests, request.run_tests
+                    )
+                )
+            except VerityError as exc:
+                if exc.code == "COVERAGE_UNAVAILABLE":
+                    results.append(RequirementCoverage(
+                        requirement_id=requirement_id,
+                        status=CoverageStatus.UNCERTAIN,
+                        reason="workspace file changed during evaluation",
+                        limitations=["workspace_changed"],
+                    ))
+                    limitations.append("workspace changed during evaluation")
+                else:
+                    raise
 
-        limitations: list[str] = []
         after = await self._scanner.snapshot(request.workspace_id)
         if after.revision != snapshot.revision:
             results = [
@@ -97,7 +165,7 @@ class DefaultCoverageService(CoverageService):
             ]
             limitations.append("workspace changed during evaluation")
 
-        return CoverageResult(
+        report = CoverageResult(
             schema_version="1.0.0",
             coverage_id=str(uuid4()),
             workspace_id=request.workspace_id,
@@ -105,6 +173,37 @@ class DefaultCoverageService(CoverageService):
             inspected_at=_now_utc(),
             results=results,
             limitations=limitations,
+        )
+        if self._store is not None:
+            # One immutable report row per run (contract 12/16).
+            await self._store.save_coverage(report)
+        return report
+
+    @staticmethod
+    def _merge_outcomes(
+        retrieved: tuple[TestEvidence, ...],
+        executed: tuple[TestEvidence, ...],
+    ) -> tuple[TestEvidence, ...]:
+        """Apply allowlisted runner outcomes to retrieved tests by path.
+
+        Unmapped runner evidence is dropped (never proof for an unrelated
+        requirement); retrieved tests without an executed outcome stay
+        ``not_run`` (contract 12).
+        """
+        if not executed:
+            return retrieved
+        by_path = {e.path: e for e in executed}
+        return tuple(
+            TestEvidence(
+                path=e.path,
+                start_line=e.start_line,
+                end_line=e.end_line,
+                excerpt=e.excerpt,
+                basis=e.basis,
+                outcome=by_path[e.path].outcome
+                if e.path in by_path else e.outcome,
+            )
+            for e in retrieved
         )
 
 

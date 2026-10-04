@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "items": [
+    {
+      "schema_version": "1.0.0",
+      "source_id": "24da624f-7fd0-41ea-a49b-8449cbb179d9",
+      "source_key": "payments-api",
+      "source_path": "specs/payments.md",
+      "registered_at": "2026-10-04T10:00:00Z"
+    },
+    {
+      "schema_version": "1.0.0",
+      "source_id": "7a4c2a44-1a0d-4f9d-b3c7-2e5d7f9a1b3c",
+      "source_key": null,
+      "source_path": "docs/security-policy.pdf",
+      "registered_at": "2026-10-04T10:05:00Z"
+    }
+  ],
+  "limit": 50,
+  "offset": 0,
+  "total": 2
+}
