@@ -18,6 +18,7 @@ from uuid import UUID
 from ..errors import VerityError
 from ..ids import make_block_id, make_evidence_id, new_uuid4
 from ..models import (
+    AcceptanceCriterion,
     Chunk,
     ChunkKind,
     Document,
