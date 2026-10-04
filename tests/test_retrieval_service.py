@@ -150,13 +150,16 @@ def test_both_branches_failed_is_retrieval_unavailable() -> None:
 
 
 def test_query_trim_nfc_and_validation() -> None:
-    # NFD "café" + padding -> NFC "café" reaches the matcher normalized.
+    # NFD "café" + padding -> NFC "café" reaches BOTH branches normalized
+    # (contract 06: the retrieval query is trimmed and NFC-normalized).
     nfd = "  cafe\u0301 window  "
     store, service = build(lexical=[ranked(CHUNK_A, rank=1)])
     run(service.search(request(query=nfd)))
     assert normalize_query(nfd) == "caf\u00e9 window"
     forwarded, _ = store.lexical_requests[0]
-    assert forwarded.query == nfd  # raw request forwarded; matching is store-side
+    assert forwarded.query == normalize_query(nfd)
+    _, dense_request, _, _ = store.vector_requests[0]
+    assert dense_request.query == normalize_query(nfd)
     # empty after trim and short queries are INVALID_REQUEST
     for bad in ("   ", " a "):
         with pytest.raises(VerityError) as exc:

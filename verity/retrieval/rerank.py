@@ -90,18 +90,21 @@ async def rerank(query: str, fused: FusedRun, reranker: Any | None = None,
     try:
         scores = await reranker.score(
             query, tuple(item.chunk for item in candidates))
+        if len(scores) != len(candidates):
+            return _rrf_fallback(fused, candidates, RERANKER_UNAVAILABLE)
+        numeric = tuple(float(score) for score in scores)
+        if not all(score == score and abs(score) != float("inf") for score in numeric):
+            return _rrf_fallback(fused, candidates, RERANKER_UNAVAILABLE)
     except Exception:
-        return _rrf_fallback(fused, candidates, RERANKER_UNAVAILABLE)
-    if len(scores) != len(candidates):
         return _rrf_fallback(fused, candidates, RERANKER_UNAVAILABLE)
 
     items = [
         ScoredCandidate(
-            chunk=item.chunk, score=float(score), rrf_score=item.rrf_score,
-            rerank_score=float(score), lexical_rank=item.lexical_rank,
+            chunk=item.chunk, score=score, rrf_score=item.rrf_score,
+            rerank_score=score, lexical_rank=item.lexical_rank,
             dense_rank=item.dense_rank,
         )
-        for item, score in zip(candidates, scores)
+        for item, score in zip(candidates, numeric)
     ]
     items.sort(key=lambda item: (-item.score, -item.rrf_score,
                                  item.chunk.chunk_id))
