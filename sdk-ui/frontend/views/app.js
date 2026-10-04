@@ -55,6 +55,8 @@ async function navigate(name) {
 document.querySelectorAll("nav a").forEach((a) =>
   a.addEventListener("click", (event) => {
     event.preventDefault();
+    document.querySelectorAll("nav a").forEach((n) =>
+      n.classList.toggle("active", n === a));
     navigate(a.dataset.view);
   }));
 
