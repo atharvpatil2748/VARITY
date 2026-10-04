@@ -157,8 +157,10 @@ def build_server(service: Any, deadlines: Mapping[str, float] | None = None) -> 
             return _error_result(err, request_id)
         except Exception:
             log.exception("tool %s crashed request_id=%s", name, request_id)
+            # Contract 17: details never duplicates top-level Error fields, so
+            # no request_id here - _error_result sets it via err.to_dict().
             return _error_result(
-                VerityError("INTERNAL_ERROR", "internal server error", {"request_id": request_id}),
+                VerityError("INTERNAL_ERROR", "internal server error"),
                 request_id,
             )
         log.info("tool %s ok request_id=%s", name, request_id)

@@ -304,6 +304,26 @@ def test_crash_maps_to_internal_error_without_internals(wire_fixtures):
     assert "RuntimeError" not in json.dumps(payload)
 
 
+def test_crash_error_details_null_single_request_id(wire_fixtures):
+    """Contract 17 regression: crash-path Error has details=null and the
+    request_id appears exactly once (top level), never duplicated in details."""
+
+    class ExplodingFake(FakeVerityService):
+        async def get_requirement(self, requirement_id):
+            raise RuntimeError("boom")
+
+    (result,) = call_tools(build_server(ExplodingFake(wire_fixtures)), [("get_requirement", {"requirement_id": REQ_ID})])
+    assert result.is_error is True
+    payload = result.structured_content
+    assert payload["code"] == "INTERNAL_ERROR"
+    assert payload["details"] is None
+    request_id = payload["request_id"]
+    assert isinstance(request_id, str) and len(request_id) == 36
+    # Exactly one occurrence across both the structured payload and its text twin.
+    assert json.dumps(payload).count(request_id) == 1
+    assert result.content[0].text.count(request_id) == 1
+
+
 def test_subprocess_stdio_roundtrip(wire_fixtures):
     async def _run():
         params = StdioServerParameters(

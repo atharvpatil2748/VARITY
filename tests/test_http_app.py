@@ -148,6 +148,7 @@ def test_crash_is_sanitized_internal_error(schemas, fake_service):
     validate_wire(schemas, "HttpError", body)
     assert body["error"]["code"] == "INTERNAL_ERROR"
     assert body["error"]["retryable"] is True
+    assert body["error"]["details"] is None
     assert "secret" not in json.dumps(body)
     assert "RuntimeError" not in json.dumps(body)
 

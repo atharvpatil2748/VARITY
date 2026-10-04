@@ -166,5 +166,7 @@ def test_route_crash_sanitized_500(wire_fixtures):
     assert response.status_code == 500
     payload = response.json()
     assert payload["error"]["code"] == "INTERNAL_ERROR"
+    assert payload["error"]["retryable"] is True
+    assert payload["error"]["details"] is None
     assert "secret" not in json.dumps(payload)
     assert "RuntimeError" not in json.dumps(payload)
