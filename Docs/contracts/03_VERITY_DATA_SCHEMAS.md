@@ -71,6 +71,8 @@ Every table row is `field : JSON type; required?; nullable?; default; meaning/ex
 | `metadata` | `DocumentMetadata`; Y/N; — | Metadata envelope above | 1.0.0 |
 | `indexed_at` | UTC date-time or null; Y/Y; null | Last active index completion | 1.0.0 |
 
+`Document.version_id`, `content_sha256` and `metadata` describe the active version. **One exception (D3, change log 1.0.3):** when a `Document` is returned by `KnowledgeStore.get_evidence_origin` (`16`), it describes the version that contains the resolved evidence, which may be historical; its `version_id`, `content_sha256` and `metadata` are that version's. Every other surface reports the active version.
+
 ### `Requirement`
 
 | Field | Type; R/N; default | Meaning / example | Since |
