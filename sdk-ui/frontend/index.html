@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VERITY — Your documents. Your specs. Evidence that Cline can cite.</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, sans-serif; }
+    body { margin: 0; background: #f7f8fa; color: #1c2430; }
+    header { padding: 14px 24px; background: #10203a; color: #fff; }
+    header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+    main { max-width: 880px; margin: 24px auto; padding: 0 16px; }
+    nav a { margin-right: 16px; color: #24457a; text-decoration: none; }
+    .state { padding: 20px; border: 1px solid #dde3ec; border-radius: 8px;
+             background: #fff; margin-top: 16px; }
+    .status-pill { padding: 2px 10px; border-radius: 999px; font-size: 12px;
+                   font-weight: 600; }
+    .IMPLEMENTED { background: #d9f2e3; color: #12643a; }
+    .PARTIAL { background: #fdeec9; color: #8a5a00; }
+    .MISSING { background: #fbdcdc; color: #8f1f1f; }
+    .UNCERTAIN { background: #e2e6ef; color: #44506a; }
+    code { background: #eef1f6; padding: 1px 5px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <header><h1>VERITY</h1></header>
+  <main>
+    <nav>
+      <a href="#" data-view="health">Health</a>
+      <a href="#" data-view="documents">Documents</a>
+      <a href="#" data-view="search">Search</a>
+      <a href="#" data-view="coverage">Coverage</a>
+    </nav>
+    <!-- U2–U4 views render into this container; U1 wires the typed mock. -->
+    <section id="view" class="state" aria-live="polite">Loading…</section>
+  </main>
+  <script type="module">
+    import { api, ApiError } from "./api-mock/client.js";
+    const view = document.getElementById("view");
+    const esc = (s) => String(s).replace(/[&<>"]/g,
+      (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    const render = (html) => { view.innerHTML = html; };
+    const loading = () => render("<em>Loading…</em>");
+    const failure = (e) => render(
+      e instanceof ApiError
+        ? `<strong>Error ${esc(e.code)}</strong>: ${esc(e.message)} ` +
+          `<small>(request ${esc(e.requestId)})</small>`
+        : `<strong>Unexpected error</strong>: ${esc(e.message)}`);
+
+    async function show(name) {
+      loading();
+      try {
+        if (name === "health") {
+          const h = await api.getHealth();
+          render(`<strong>${esc(h.status)}</strong> — database: ${esc(h.database)}, ` +
+                 `retrieval: ${esc(h.retrieval_mode)}, SDK: ${h.sdk_available}`);
+        } else if (name === "documents") {
+          const page = await api.listDocuments();
+          render(page.items.map((d) =>
+            `<div>${esc(d.name)} <small>(${esc(d.kind)}, ${esc(d.status)})</small></div>`
+          ).join(""));
+        } else if (name === "search") {
+          const result = await api.search();
+          render(result.items.map((ev) =>
+            `<div><strong>${esc(ev.citation.label)}</strong><br>` +
+            `<em>${esc(ev.quote)}</em></div>`).join(""));
+        } else if (name === "coverage") {
+          const report = await api.checkCoverage();
+          render(report.results.map((r) =>
+            `<div><span class="status-pill ${esc(r.status)}">${esc(r.status)}</span> ` +
+            `— ${esc(r.reason)}</div>`).join(""));
+        }
+      } catch (e) { failure(e); }
+    }
+
+    document.querySelectorAll("nav a").forEach((a) =>
+      a.addEventListener("click", (event) => {
+        event.preventDefault();
+        show(a.dataset.view);
+      }));
+    show("health");
+  </script>
+</body>
+</html>

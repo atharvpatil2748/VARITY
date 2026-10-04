@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0.0",
+  "items": [
+    {
+      "schema_version": "1.0.0",
+      "document_id": "ebc2352e-ff9c-4167-b11a-1e30d550411d",
+      "source_id": "24da624f-7fd0-41ea-a49b-8449cbb179d9",
+      "version_id": "129dcd06-1ba1-4f0c-bf7e-c678f905b624",
+      "name": "payments.md",
+      "media_type": "text/markdown",
+      "kind": "spec",
+      "status": "ready",
+      "content_sha256": "1adbe57aee393b8434dd44412c6387eb05d71350cc2d85a00f4439ee6d998440",
+      "metadata": {
+        "metadata_version": "1.0.0",
+        "title": "Payments API v2 specification",
+        "source_key": "payments-api",
+        "project": "payments-api",
+        "spec_version": "2.0.0",
+        "language": "en",
+        "page_count": null,
+        "parser_name": "verity-md-parser",
+        "parser_version": "1.0.0",
+        "warnings": []
+      },
+      "indexed_at": "2026-10-04T12:00:00Z"
+    }
+  ],
+  "limit": 50,
+  "offset": 0,
+  "total": 1
+}

@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "status": "ok",
+  "database": "ready",
+  "retrieval_mode": "hybrid",
+  "sdk_available": true
+}

@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0.0",
+  "query": "zz-no-match",
+  "items": [],
+  "retrieval_mode": "lexical_only",
+  "reranker_used": false,
+  "completeness": "empty",
+  "omissions": [],
+  "total_returned": 0
+}

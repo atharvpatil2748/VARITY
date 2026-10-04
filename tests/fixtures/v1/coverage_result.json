@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0.0",
+  "coverage_id": "c3ddf6fc-feba-4489-a8c1-129d97312b6b",
+  "workspace_id": "demo",
+  "workspace_revision": "b64ac585ccab28dbac90b9ad35b5daee786a28dd255954e1e00a4ba42b4b5e50",
+  "inspected_at": "2026-10-04T12:00:00Z",
+  "results": [
+    {
+      "requirement_id": "req_1d89bd403b85bcab97977f891a494c9788e5b7571e43a938c3b2d08c454ffbd2",
+      "status": "IMPLEMENTED",
+      "implementation": [
+        {
+          "path": "src/refund.py",
+          "start_line": 10,
+          "end_line": 14,
+          "excerpt": "def accept_refund(purchase, now):\n    return (now - purchase.date).days <= 30",
+          "basis": "static_check"
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_refund.py",
+          "start_line": 5,
+          "end_line": 9,
+          "excerpt": "def test_refund_within_window():\n    assert accept_refund(purchase, now)",
+          "basis": "test_execution",
+          "outcome": "passed"
+        }
+      ],
+      "reason": "Refund window condition is implemented in src/refund.py and a relevant test passed.",
+      "limitations": []
+    }
+  ],
+  "limitations": []
+}

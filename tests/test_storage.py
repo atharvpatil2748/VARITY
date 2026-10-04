@@ -13,7 +13,7 @@ from uuid import UUID
 import pytest
 
 from verity.errors import VerityError
-from verity.ids import make_chunk_id, make_evidence_id
+from verity.ids import make_chunk_id, make_evidence_id, make_requirement_id
 from verity.models import (
     Chunk,
     ChunkKind,
@@ -410,3 +410,91 @@ def test_save_embedding_binds_text_hash(store: SqliteKnowledgeStore) -> None:
     # Rejects empty/zero vectors (finding 5).
     with pytest.raises(VerityError):
         store.save_embedding(chunk.chunk_id, "test-model", (0.0, 0.0), "Embedded text.")
+
+
+# ---------------------------------------------------------------------------
+# Requirement reader round trip (regression for issue #10)
+# ---------------------------------------------------------------------------
+
+
+def test_get_requirement_round_trip_with_acceptance_criteria(
+    store: SqliteKnowledgeStore,
+) -> None:
+    """Issue #10 regression: get_requirement must reconstruct acceptance
+    criteria (AcceptanceCriterion import) without NameError, and resolve only
+    the active version's requirement."""
+    import hashlib
+
+    from verity.models import AcceptanceCriterion, SpecEntity
+
+    text = "Refund window MUST be configurable."
+    request = IngestRequest(source_path="specs/payments.md")
+    sha = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    identity = run(store.prepare_ingestion(request, sha, None))
+    chunk = _chunk(identity.version_id, text)
+    locator = Locator(
+        source_id=str(identity.source_id),
+        document_id=str(identity.document_id),
+        version_id=str(identity.version_id),
+        source_path="specs/payments.md",
+        page=None,
+        start_line=1,
+        end_line=1,
+        start_offset=None,
+        end_offset=None,
+        heading_path=["Requirements", "REQ-001"],
+    )
+    requirement_id = make_requirement_id(identity.source_id, "REQ-001")
+    requirement = Requirement(
+        schema_version="1.0.0",
+        requirement_id=requirement_id,
+        local_id="REQ-001",
+        source_id=str(identity.source_id),
+        document_id=str(identity.document_id),
+        version_id=str(identity.version_id),
+        title="Refund window",
+        text=text,
+        chunk_id=chunk.chunk_id,
+        evidence_id=make_evidence_id(identity.version_id, chunk.chunk_id),
+        locator=locator,
+        constraints=[],
+        edge_cases=[],
+        acceptance_criteria=[
+            AcceptanceCriterion(
+                local_id="AC-001",
+                title="Window length is configurable",
+                text="The refund window can be set between 1 and 90 days.",
+                locator=locator,
+            )
+        ],
+        api_refs=[],
+        reference_ids=[],
+    )
+    ac_entity = SpecEntity(
+        schema_version="1.0.0",
+        kind=ChunkKind.ACCEPTANCE_CRITERION,
+        local_id="AC-001",
+        title="Window length is configurable",
+        text="The refund window can be set between 1 and 90 days.",
+        chunk_id=chunk.chunk_id,
+        evidence_id=make_evidence_id(identity.version_id, chunk.chunk_id),
+        locator=locator,
+        reference_ids=["REQ-001"],
+    )
+    result = run(store.activate_ingestion(
+        identity, request, _parsed(text), (chunk,), (requirement,),
+        (ac_entity,), text.encode("utf-8"),
+    ))
+    assert result.created_new_version is True
+
+    loaded = run(store.get_requirement(requirement_id))
+    assert loaded is not None
+    assert loaded.local_id == "REQ-001"
+    assert loaded.requirement_id == requirement_id
+    assert loaded.version_id == str(identity.version_id)
+    assert [ac.local_id for ac in loaded.acceptance_criteria] == ["AC-001"]
+    assert loaded.acceptance_criteria[0].title == "Window length is configurable"
+    assert loaded.evidence_id == make_evidence_id(identity.version_id, chunk.chunk_id)
+    assert loaded.chunk_id == chunk.chunk_id
+    # Unknown/never-known requirement IDs resolve to None (never an error).
+    assert run(store.get_requirement("req_" + "9" * 64)) is None

@@ -1,0 +1,1 @@
+# VERITY MCP transport (stdio) - see Docs/contracts/09_VERITY_MCP_CONTRACT.md.

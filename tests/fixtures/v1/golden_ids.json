@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "description": "Golden ID vectors frozen in Docs/contracts/03_VERITY_DATA_SCHEMAS.md. Hash inputs are UTF-8 canonical JSON with sorted keys, ensure_ascii=false, separators ',' and ':', NFC-normalized string values.",
+  "source_id": "24da624f-7fd0-41ea-a49b-8449cbb179d9",
+  "document_id": "ebc2352e-ff9c-4167-b11a-1e30d550411d",
+  "version_id": "129dcd06-1ba1-4f0c-bf7e-c678f905b624",
+  "coverage_id": "c3ddf6fc-feba-4489-a8c1-129d97312b6b",
+  "request_id": "b4031e7a-9294-4a46-802f-43a738fdb713",
+  "local_id": "REQ-001",
+  "block": {"version_id": "129dcd06-1ba1-4f0c-bf7e-c678f905b624", "ordinal": 0, "text": "Refund window"},
+  "block_id": "blk_75c2eccdd286a5d1218d15d0d80f0f65356359458fd641fa25e7e9e117f6cfff",
+  "chunk": {"version_id": "129dcd06-1ba1-4f0c-bf7e-c678f905b624", "block_start": 0, "block_end": 1, "start_offset": null, "end_offset": null, "kind": "requirement", "text": "Refund requests MUST be accepted only within 30 days."},
+  "chunk_id": "chk_71bb4eb1f7917adbd4771acd9946ee1a30994af19c4ebbf66ecd2b1e4b89b16a",
+  "requirement": {"source_id": "24da624f-7fd0-41ea-a49b-8449cbb179d9", "local_id": "REQ-001"},
+  "requirement_id": "req_1d89bd403b85bcab97977f891a494c9788e5b7571e43a938c3b2d08c454ffbd2",
+  "evidence": {"version_id": "129dcd06-1ba1-4f0c-bf7e-c678f905b624", "chunk_id": "chk_71bb4eb1f7917adbd4771acd9946ee1a30994af19c4ebbf66ecd2b1e4b89b16a"},
+  "evidence_id": "ev_0a9948f2aa8b8cc5e499ef43626c5847eeab8df548ba5961e38a9a1126e4dc8e"
+}
