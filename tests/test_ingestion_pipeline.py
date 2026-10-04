@@ -9,6 +9,7 @@ integration tests follow in PR-P2 after PR-A2 merges (roadmap 03 P5 row).
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import re
 import sys
 from pathlib import Path
@@ -56,7 +57,7 @@ def test_ingest_spec_end_to_end(pipeline: IngestionPipeline, store: FakeKnowledg
     assert doc.name == "payments.md"
     assert doc.kind is DocumentKind.SPEC
     assert doc.status is DocumentStatus.READY
-    assert doc.content_sha256 == __import__("hashlib").sha256(data).hexdigest()
+    assert doc.content_sha256 == hashlib.sha256(data).hexdigest()
     assert len(store.chunks) == 9
     assert len(store.requirements) == 3
     req = store.requirements[verity_ids.make_requirement_id(doc.source_id, "REQ-001")]

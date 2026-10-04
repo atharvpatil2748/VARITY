@@ -21,7 +21,6 @@ The identity record is duck-typed (``source_id``/``document_id``/
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
 
@@ -34,14 +33,10 @@ from verity.models import (
     IngestResult,
     Requirement,
 )
+from verity.storage.base import IngestionIdentity
 
-
-@dataclass(frozen=True)
-class FakeIngestionIdentity:
-    source_id: UUID
-    document_id: UUID
-    version_id: UUID
-    existing_version_id: UUID | None
+#: Exact frozen type from verity.storage.base (PR-A2); alias keeps call sites.
+FakeIngestionIdentity = IngestionIdentity
 
 
 class FakeKnowledgeStore:
