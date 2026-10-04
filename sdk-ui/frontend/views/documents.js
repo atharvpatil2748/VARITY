@@ -90,8 +90,19 @@ export function uploadView(api, onUploaded) {
     event.preventDefault();
     feedback.replaceChildren(loadingState());
     try {
+      if (!file.files || !file.files[0]) {
+        feedback.replaceChildren(errorCard({
+          error: {
+            code: "INVALID_REQUEST",
+            message: "select a file to upload",
+            request_id: "—",
+            retryable: false,
+          }
+        }));
+        return;
+      }
       const form = new FormData();
-      if (file.files && file.files[0]) form.append("file", file.files[0]);
+      form.append("file", file.files[0]);
       form.append("mode", mode.value);
       const result = await api.uploadDocument(form);
       feedback.replaceChildren(el("div", { class: "upload-ok" },

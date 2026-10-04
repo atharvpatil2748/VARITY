@@ -60,7 +60,8 @@ export class MockApiClient {
 
   async _fetch(name) {
     if (!this._cache.has(name)) {
-      const response = await fetch(FIXTURES[name]);
+      const url = new URL(FIXTURES[name], import.meta.url).href;
+      const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`fixture ${name} could not be loaded`);
       }
