@@ -3,8 +3,9 @@
 Verifies the frozen cross-module signatures of ``EmbeddingProvider``,
 ``Reranker`` and ``RetrievalService`` and the shared ``FakeRetrievalService``
 sample run shape (RetrievalRun per contract 16, chunk per contract 03/21).
-No final public search implementation exists here: D1 (issue #2) is open and
-PR-P3 is hard-stopped until the team approves an amendment.
+D1 is resolved (issue #2, docs 1.0.2): ``search`` returns ``RetrievalRun``
+per both contracts 06 and 16. The concrete ``search`` implementation (P9)
+still waits for PR-A3 real store wiring; fixture/fake work continues.
 """
 
 from __future__ import annotations

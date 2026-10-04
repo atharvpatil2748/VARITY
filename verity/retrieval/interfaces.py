@@ -6,12 +6,11 @@ Exact frozen signatures from ``Docs/contracts/16_VERITY_PUBLIC_INTERFACES.md``:
 * ``Reranker`` — optional BGE reranker scoring.
 * ``RetrievalService.search`` — the one public knowledge-search operation.
 
-**D1 note (open issue #2):** contract 06 states the return as
-``tuple[RetrievalResult, ...]`` while contract 16 states ``RetrievalRun``.
-Until the team approves an amendment, code stubs follow ``16`` because
-contract 01 assigns callable-signature authority to ``16`` (roadmap 06 D1
-row), but no final public search implementation is published here and PR-P3
-stays blocked. Retrieval internals (P6-P8) continue against fakes.
+**D1 resolved (issue #2, docs revision 1.0.2):** contract 06 now reads
+``RetrievalService.search(request: SearchRequest) -> RetrievalRun``, aligned
+with contract 16. ``RetrievalRun`` is the final public return type; the
+``search`` implementation itself (P9) still waits for PR-A3's real store
+wiring per roadmap 08, with fixture/fake work continuing meanwhile.
 """
 
 from __future__ import annotations
