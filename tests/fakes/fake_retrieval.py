@@ -87,6 +87,29 @@ class FakeEmbeddingProvider:
         return tuple(await self.embed(text) for text in texts)
 
 
+class FakeReranker:
+    """Pre-provisioned reranker stand-in (P8); scripted scores, no downloads."""
+
+    model_id = "fake/bge-reranker-v2-m3@test"
+
+    def __init__(self, scores: tuple[float, ...] | None = None,
+                 fail: bool = False, wrong_length: bool = False) -> None:
+        self.scores = scores
+        self.fail = fail
+        self.wrong_length = wrong_length
+        self.calls: list[tuple[str, int]] = []
+
+    async def score(self, query: str, chunks) -> tuple[float, ...]:
+        self.calls.append((query, len(chunks)))
+        if self.fail:
+            raise RuntimeError("reranker not provisioned")
+        if self.wrong_length:
+            return (0.5,)
+        if self.scores is not None:
+            return self.scores
+        return tuple(1.0 / (index + 1) for index in range(len(chunks)))
+
+
 class FakeCandidateStore:
     """Scriptable candidate reader for P6 branch tests (no SQL)."""
 

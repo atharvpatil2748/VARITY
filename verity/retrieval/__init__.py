@@ -21,6 +21,13 @@ from .dense import DenseBranch
 from .fusion import FUSED_CAP, RRF_K, FusedCandidate, FusedRun, fuse
 from .interfaces import EmbeddingProvider, Reranker, RetrievalService
 from .lexical import LexicalBranch
+from .rerank import (
+    RERANK_INPUT_CAP,
+    RERANKER_UNAVAILABLE,
+    RerankedRun,
+    ScoredCandidate,
+    rerank,
+)
 
 __all__ = [
     "BRANCH_CANDIDATE_BUDGET",
@@ -32,10 +39,15 @@ __all__ = [
     "FusedRun",
     "LEXICAL_UNAVAILABLE",
     "LexicalBranch",
+    "RERANK_INPUT_CAP",
+    "RERANKER_UNAVAILABLE",
     "RRF_K",
+    "RerankedRun",
     "Reranker",
     "RetrievalService",
     "SEMANTIC_MODEL_UNAVAILABLE",
     "SEMANTIC_UNAVAILABLE",
+    "ScoredCandidate",
     "fuse",
+    "rerank",
 ]
