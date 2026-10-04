@@ -111,7 +111,7 @@ class FakeReranker:
 
 
 class FakeCandidateStore:
-    """Scriptable candidate reader for P6 branch tests (no SQL)."""
+    """Scriptable candidate reader for P6/P9 branch tests (no SQL)."""
 
     def __init__(self, lexical=None, vector=None) -> None:
         self.lexical = tuple(lexical or ())
@@ -120,6 +120,7 @@ class FakeCandidateStore:
         self.fail_vector = False
         self.lexical_requests: list[Any] = []
         self.vector_requests: list[Any] = []
+        self.known_documents: set[str] = set()
 
     async def lexical_candidates(self, request, limit):
         self.lexical_requests.append((request, limit))
@@ -133,15 +134,21 @@ class FakeCandidateStore:
             raise RuntimeError("vector scan failed")
         return self.vector[:limit]
 
+    async def get_document(self, document_id):
+        if str(document_id) in self.known_documents:
+            return object()  # presence marker; P9 only checks existence
+        return None
 
-def ranked(chunk_id: str, rank: int = 1, score: float = 1.0):
+
+def ranked(chunk_id: str, rank: int = 1, score: float = 1.0,
+           document_id: str = "ebc2352e-ff9c-4167-b11a-1e30d550411d"):
     """Build a RankedChunk over a minimal canonical Chunk (test helper)."""
     from verity.models import Chunk, ChunkKind, Locator
     from verity.storage.base import RankedChunk
 
     locator = Locator(
         source_id="24da624f-7fd0-41ea-a49b-8449cbb179d9",
-        document_id="ebc2352e-ff9c-4167-b11a-1e30d550411d",
+        document_id=document_id,
         version_id="129dcd06-1ba1-4f0c-bf7e-c678f905b624",
         source_path="specs/payments.md", page=None,
         start_line=1, end_line=1, start_offset=None, end_offset=None,

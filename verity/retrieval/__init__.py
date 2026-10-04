@@ -28,10 +28,12 @@ from .rerank import (
     ScoredCandidate,
     rerank,
 )
+from .service import DefaultRetrievalService, normalize_query
 
 __all__ = [
     "BRANCH_CANDIDATE_BUDGET",
     "BranchResult",
+    "DefaultRetrievalService",
     "DenseBranch",
     "EmbeddingProvider",
     "FUSED_CAP",
@@ -49,5 +51,6 @@ __all__ = [
     "SEMANTIC_UNAVAILABLE",
     "ScoredCandidate",
     "fuse",
+    "normalize_query",
     "rerank",
 ]
